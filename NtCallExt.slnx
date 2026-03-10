@@ -1,0 +1,8 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Example/Example.vcxproj" Id="eaedef4f-d886-423d-a246-05b794cd16e3" />
+  <Project Path="NtCallExt/NtCallExt.vcxproj" Id="92216ecf-9163-4fd6-9cc3-7937519d43e2" />
+</Solution>
