@@ -86,7 +86,7 @@ class NTEX_API NtCallExt {
 		MakeANSIStr<T>(aStr.c_str(), outAnsiStr);
 	}
 
-	DWORD64 IsCached(const std::string& funcName) {
+	DWORD64 IsCached64(const std::string& funcName) {
 		std::shared_lock<std::shared_mutex> lock(_mutex);
 		auto it = _cache.find(funcName);
 		if ( it != _cache.end() ) {
@@ -96,7 +96,7 @@ class NTEX_API NtCallExt {
 	}
 
 	DWORD64 GetFunc64(DWORD64 hMod, const std::string& funcName) {
-		if ( auto addr = IsCached(funcName) ) return addr;
+		if ( auto addr = IsCached64(funcName) ) return addr;
 
 		if ( hMod == 0 ) return 0;
 
@@ -110,7 +110,7 @@ class NTEX_API NtCallExt {
 	}
 
 	DWORD64 GetFunc64(const std::wstring& moduleName, const std::string& funcName) {
-		if ( auto addr = IsCached(funcName) ) return addr;
+		if ( auto addr = IsCached64(funcName) ) return addr;
 
 		DWORD64 hMod = GetModuleBase64(moduleName.data());
 		if ( hMod == 0 ) return 0;
@@ -119,7 +119,7 @@ class NTEX_API NtCallExt {
 	}
 
 	DWORD64 GetFunc64(const std::string& funcName) {
-		if ( auto addr = IsCached(funcName) ) return addr;
+		if ( auto addr = IsCached64(funcName) ) return addr;
 		return GetFunc64(GetNtdll64(), funcName);
 	}
 
