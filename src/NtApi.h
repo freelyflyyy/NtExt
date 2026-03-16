@@ -1,44 +1,5 @@
 #pragma once
-
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif // Win32 lean and mean
-
-#include <windows.h>
-#include <tlhelp32.h>
-#include <winternl.h>
-#include <wtypes.h>
-
-#pragma warning(push)
-#pragma warning(disable: 4005) 
-#include <ntstatus.h>
-#pragma warning(pop)
-
-//Windows version helper
-#include <sdkddkver.h>
-
-#include <unordered_map>
-#include <shared_mutex>
-#include <iostream>
-#include <vector>
-#include <string>
-#include <map>
-#include <memory>
-#include <algorithm>
-#include <functional>
-#include <cstdarg>
-
-// Define NTCALL_API for exporting functions from the DLL
-#ifdef _MSC_VER
-	#if defined(NTEX_IMPORTS)
-		#define NTEX_API __declspec(dllimport)
-	#elif defined(NTEX_EXPORTS)
-		#define NTEX_API __declspec(dllexport)
-	#else
-		#define NTEX_API
-	#endif
-#endif
-
+#include "stdafx.h"
 
 typedef enum _MEMORY_INFORMATION_CLASS {
 	MemoryBasicInformation = 0,
