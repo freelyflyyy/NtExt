@@ -2,7 +2,8 @@
 A hacker tool implemented in C++ for x86/x64 Windows platforms, 
 featuring the heavens gate, hells gate and halos gate technology for Wow64.
 By doing this, we can load 64-bit DLLs and get 64-bit functions, and invoke them—even performing direct Ring 0 (r0) level syscalls.
-Notably, I refer to this specific WoW64 Hell's Gate technique as 'Limbo's Gate'
+
+**Notably, I refer to this specific WoW64 Hell's Gate technique as 'Limbo's Gate'**
 
 ---
 
