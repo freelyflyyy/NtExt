@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include "Wow64NtCallExt.h"
-#include "NtAsm.h"
+#include "internal/NtAsm.h"
 
-namespace MemX {
+namespace NtExt {
     DWORD64 NTAPI Wow64NtCallExt::GetProcAddress64(DWORD64 hMod, const char* funcName) {
         if ( !hMod || !funcName ) return 0;
         static DWORD64 ldrGetProcedureAddress = 0;

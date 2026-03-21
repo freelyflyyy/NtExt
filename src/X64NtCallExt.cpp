@@ -1,8 +1,8 @@
 #pragma once
 #include "X64NtCallExt.h"
-#include "NtAsm.h"
+#include "internal/NtAsm.h"
 
-namespace MemX {
+namespace NtExt {
 	DWORD64 NTAPI X64NtCallExt::GetProcAddress64(DWORD64 hMod, const char* funcName) {
 		if ( !hMod || !funcName ) {
 			return 0;

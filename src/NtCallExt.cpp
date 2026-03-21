@@ -3,7 +3,7 @@
 #pragma warning(push)
 #pragma warning(disable: 4251)
 
-namespace MemX {
+namespace NtExt {
     VOID NTAPI NtCallExt::_MakeUTFStrVa(LPCWSTR lpString, LPBYTE outBuffer, SIZE_T pointerSize) {
         if ( !lpString || !outBuffer ) return;
         SIZE_T len = wcslen(lpString);

@@ -1,8 +1,7 @@
 #pragma once
-#include "stdafx.h"
+#include "../pch/stdafx.h"
 
-
-namespace MemX {
+namespace NtExt {
 	typedef enum _MEMORY_INFORMATION_CLASS {
 		MemoryBasicInformation = 0,
 		MemoryWorkingSetInformation = 1,

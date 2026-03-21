@@ -1,7 +1,7 @@
 #pragma once
 #include "NtCallExt.h"
 
-namespace MemX {
+namespace NtExt {
 	class X64NtCallExt : public NtCallExt {
 		public:
 		~X64NtCallExt() override = default;

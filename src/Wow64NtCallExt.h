@@ -1,7 +1,7 @@
 #pragma once
 #include "NtCallExt.h"
 
-namespace MemX {
+namespace NtExt {
     class Wow64NtCallExt : public NtCallExt {
         public:
         ~Wow64NtCallExt() override = default;

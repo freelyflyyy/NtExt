@@ -1,8 +1,8 @@
 #pragma once
-#include "stdafx.h"
-#include "NtApi.h"
+#include "pch/stdafx.h"
+#include "internal/NtApi.h"
 
-namespace MemX {
+namespace NtExt {
 
     class NtCallExt {
         public:
