@@ -7,14 +7,14 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)]()
 
 <a id="english"></a>
-NtExt is an advanced C++ framework for WoW64 Direct X64 Syscall, Heaven's Gate, and EDR evasion. and load 64-bit kernel32 and bypass user-land hooks.
+NtExt is an advanced C++ framework for **WoW64 Heaven’s Gate + Direct Syscall** , Heaven's Gate, and EDR evasion. and load 64-bit kernel32 and bypass user-land hooks.
 
 If you are frustrated with the instability of traditional Heaven's Gate implementations, require direct 64-bit API access from a 32-bit process, or need to bypass deep user-land hooks, NtExt is the definitive solution.
 
 ### Highlights
 
 * **Limbo's Gate (WoW64 Direct Syscall)**
-  I refer to this specific technique as **"Limbo's Gate"**. It allows a 32-bit process to dynamically resolve System Service Numbers (SSNs) and execute raw 64-bit `syscall` instructions directly, entirely bypassing `ntdll.dll` Ring 3 hooks in both the 32-bit and 64-bit address spaces.
+  I refer to this specific technique as **"Limbo's Gate"**. It allows a 32-bit process to dynamically resolve System Service Numbers (SSN) and execute raw 64-bit `syscall` instructions directly, entirely bypassing `ntdll.dll` Ring 3 hooks in both the 32-bit and 64-bit address spaces.
 * **WoW64 64-bit Kernel32 Loading**
   Loading the 64-bit `kernel32.dll` within a WoW64 process typically fails due to PEB subsystem validation in `LdrLoadDll`. NtExt utilizes a precise PEB spoofing technique (hot-swapping `IMAGE_SUBSYSTEM_WINDOWS_CUI` to `GUI`) to deceive the OS loader, enabling flawless 64-bit module initialization.
 * **The Holy Trinity of Gates**
