@@ -1,4 +1,4 @@
-# NtCallExt
+# NtExt
 A hacker tool implemented in C++ for x86/x64 Windows platforms, 
 featuring the heavens gate, hells gate and halos gate technology for Wow64.
 By doing this, we can load 64-bit DLLs and get 64-bit functions, and invoke them—even performing direct Ring 0 (r0) level syscalls.
@@ -8,7 +8,7 @@ Notably, I have named this specific technique—fusing heavens gate with hells g
 ---
 
 ## Features
-The following are the main functions of NtCallExt  
+The following are the main functions of NtExt  
 **Only introduce X86 functions**
 
 ### X86
