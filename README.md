@@ -1,70 +1,88 @@
 # NtExt
-A hacker tool implemented in C++ for x86/x64 Windows platforms, 
-featuring the heavens gate, hells gate and halos gate technology for Wow64.
-By doing this, we can load 64-bit DLLs and get 64-bit functions, and invoke them—even performing direct Ring 0 (r0) level syscalls.
 
-Notably, I have named this specific technique—fusing heavens gate with hells gate to achieve WoW64 direct syscalls—**Limbo's Gate**.
+[English](README.md) | [简体中文](README_CN.md)
 
----
+[![Language](https://img.shields.io/badge/Language-C++17-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B17)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20x86%2Fx64-lightgrey.svg)]()
+[![License](https://img.shields.io/badge/License-MIT-green.svg)]()
 
-## Features
-The following are the main functions of NtExt  
-**Only introduce X86 functions**
+<a id="english"></a>
+NtExt is an advanced C++ framework for `X86->X64` Direct Syscall, Heaven's Gate, and EDR evasion. and load 64-bit kernel32 and bypass user-land hooks.
 
-### X86
+If you are frustrated with the instability of traditional Heaven's Gate implementations, require direct 64-bit API access from a 32-bit process, or need to bypass deep user-land hooks, NtExt is the definitive solution.
+
+### Highlights
+
+* **Limbo's Gate (WoW64 Direct Syscall)**
+  I refer to this specific technique as **"Limbo's Gate"**. It allows a 32-bit process to dynamically resolve System Service Numbers (SSNs) and execute raw 64-bit `syscall` instructions directly, entirely bypassing `ntdll.dll` Ring 3 hooks in both the 32-bit and 64-bit address spaces.
+* **WoW64 64-bit Kernel32 Loading**
+  Loading the 64-bit `kernel32.dll` within a WoW64 process typically fails due to PEB subsystem validation in `LdrLoadDll`. NtExt utilizes a precise PEB spoofing technique (hot-swapping `IMAGE_SUBSYSTEM_WINDOWS_CUI` to `GUI`) to deceive the OS loader, enabling flawless 64-bit module initialization.
+* **The Holy Trinity of Gates**
+  * **Heaven's Gate**: Seamless segment switching (`0x23` <-> `0x33`) for cross-architecture execution.
+  * **Hell's Gate**: Dynamic SSN extraction directly from the in-memory 64-bit export table, eliminating hardcoded OS-specific numbers.
+  * **Halo's Gate**: Defeats inline hooks by implementing a neighbourhood search algorithm (`_seachImpl`) to deduce the correct SSN from adjacent unhooked functions.
+* **Non-Virtual Interface (NVI) Architecture**
+  Provides an elegant `NtExt::Call` and `NtExt::Syscall` front-end interface backed by a thread-safe (Shared Mutex) caching system, minimizing redundant memory parsing.
+
+### Main Functions API Reference
+
+NtExt seamlessly supports both WoW64 (32-bit) and Native x64 (64-bit) environments. The framework exposes distinct APIs optimized for each context.
+
+#### 1. WoW64 Context (32-bit to 64-bit Execution)
+*These functions are specifically designed to bridge the 32-bit process with the 64-bit subsystem.*
+
 | Function | Attribute | Description |
 | :--- | :---: | :--- |
-| `GetTeb64` | **[Ex]** | Get the 64-bit TEB base address |
-| `GetPeb64` | **[Ex]** | Get the 64-bit PEB base address |
-| `GetNtdll64` | **[Ex]** | Get the 64-bit ntdll base address |
-| `GetKernel64` | **[Ex]** | Get the 64-bit kernelbase base address |
-| `LoadLibrary64` | **[Ex]** | Load a specified module in 64-bit |
+| `GetTeb64` / `GetPeb64` | **[Ex]** | Get the 64-bit TEB/PEB base address across the boundary |
+| `GetNtdll64` / `GetKernel64`| **[Ex]** | Get the 64-bit ntdll/kernel32 base address |
+| `LoadLibrary64` | **[Ex]** | Load a specified module natively in the 64-bit space |
 | `GetModuleBase64` | **[Ex]** | Get the base address of a specified module in 64-bit |
-| `GetModuleLdrEntry64` | **[Ex]** | Get the ***LDR_DATA_TABLE_ENTRY*** structure of a specified module in 64-bit |
-| `GetProcAddress64` | **[Ex]** | Get the address of a specified function in 64-bit |
+| `GetModuleLdrEntry64` | **[Ex]** | Get the `LDR_DATA_TABLE_ENTRY` structure of a specified module |
+| `GetProcAddress64` | **[Ex]** | Get the address of a specified function in 64-bit **(Cached)** |
 | `GetSyscallNumber64` | **[Ex]** | Get the SSN of a specified function in 64-bit |
-| `GetLdrGetProcedureAddress` | **[Ex]** | Get the address of the ***LdrGetProcedureAddress*** function in 64-bit |
-| `X64Call` | **[Ex]** | Call a specified function in 64-bit |
-| `X64SysCall` | **[Ex]** | SysCall a specified function in 64-bit |
-| `memcpy64` | **[Ex]** | Copy memory in 64-bit |
-| `GetTeb32` | | Get the 32-bit TEB base address |
-| `GetPeb32` | | Get the 32-bit PEB base address |
-| `GetNtdll32` | | Get the 32-bit ntdll base address |
-| `GetKernel32` | | Get the 32-bit kernel32 base address |
-| `LoadLibrary32` | | Load a specified module in 32-bit |
-| `GetModuleBase32` | | Get the base address of a specified module in 32-bit |
-| `GetProcAddress32` | | Get the address of a specified function in 32-bit |
-| `GetLdrGetProcedureAddress32` | | Get the address of the ***LdrGetProcedureAddress*** function in 32-bit |
+| `GetLdrGetProcedureAddress64`| **[Ex]** | Get the address of the `LdrGetProcedureAddress` function in 64-bit |
+| `Call` | **[Ex]** | Cross-architecture call to a specified 64-bit function |
+| `Syscall` | **[Ex]** | Cross-architecture direct Syscall to a 64-bit function |
+| `memcpy64` | **[Ex] | Safe memory copy bridging 32-bit and 64-bit address spaces |
 
-### Common
-The following are common functions
-| Function | Description |
-| :--- | :--- |
-| `IsCached64/32` | Check whether the specified module or function has been cached |
-| `GetFunc64/32` | Get the address of a specified function, with caching mechanism |
-| `MakeUTF/ANSIStr` | Wide character/single character encoding conversion and packaging |
-
----
-
-## Usage
+### Usage
 
 ```cpp
 #include <iostream>
-#include "NtCallExt.h"
-using namespace MemX;
+#include <NtExt.hpp>
 
-int main()
-{
-	DWORD64 func = GET_NTFUNC("NtQuerySystemInformation");
-	std::cout << "NtQuerySystemInformation address: 0x" << std::hex << func << std::dec << std::endl;
+using namespace NtExt;
 
-	DWORD64 kernel32_64 = LOADLIB64(L"kernel32.dll");
-	std::cout << "kernel32.dll base address: 0x" << std::hex << kernel32_64 << std::dec << std::endl;
+int main() {
+    // 1. Normal cross-architecture call
+    DWORD64 ntdll64 = Resolver.GetNtdll64();
+    DWORD64 pRtlGetVersion = Resolver.GetProcAddress64(ntdll64, "RtlGetVersion");
+    
+    alignas(8) BYTE osvi[300] = { 0 };
+    *(DWORD*)osvi = 284; 
+    NTSTATUS status = Call(pRtlGetVersion)((DWORD64)&osvi);
+    
+    if (status == 0) {
+        DWORD major = *(DWORD*)(osvi + 4);
+        DWORD minor = *(DWORD*)(osvi + 8);
+        DWORD build = *(DWORD*)(osvi + 12);
+        std::cout << "[+] OS Version: " << major << "." << minor << "." << build << std::endl;
+    }
 
-	DWORD64 openProcess_64 = GET_FUNC64(kernel32_64, "OpenProcess");
-	std::cout << "OpenProcess address: 0x" << std::hex << openProcess_64 << std::dec << std::endl;
-
-	DWORD64 handle = CALL64_FUNC(openProcess_64, PROCESS_ALL_ACCESS, FALSE, GetCurrentProcessId());
-	std::cout << "OpenProcess handle: 0x" << std::hex << handle << std::dec << std::endl;
-	return 0;
+    // 2. Direct Syscall (Limbo's Gate / Hell's Gate)
+    DWORD64 ssn = Resolver.GetSyscallNumber64(ntdll64, "NtReadVirtualMemory");
+    WORD dosMagic = 0;
+    
+    NTSTATUS status2 = Syscall((WORD) ssn)(
+        (DWORD64) -1,               
+        (DWORD64) ntdll64,          
+        (DWORD64) &dosMagic,        
+        (DWORD64) sizeof(dosMagic), 
+        (DWORD64) 0                 
+    );
+    
+    if (status2 == 0) {
+        std::cout << "[+] NTDLL DOS Magic: 0x" << std::hex << dosMagic << std::endl;
+    }
+    return 0;
 }
