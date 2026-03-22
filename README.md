@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)]()
 
 <a id="english"></a>
-NtExt is an advanced C++ framework for `X86->X64` Direct Syscall, Heaven's Gate, and EDR evasion. and load 64-bit kernel32 and bypass user-land hooks.
+NtExt is an advanced C++ framework for WoW64 Direct X64 Syscall, Heaven's Gate, and EDR evasion. and load 64-bit kernel32 and bypass user-land hooks.
 
 If you are frustrated with the instability of traditional Heaven's Gate implementations, require direct 64-bit API access from a 32-bit process, or need to bypass deep user-land hooks, NtExt is the definitive solution.
 

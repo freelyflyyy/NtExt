@@ -6,7 +6,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows%20x86%2Fx64-lightgrey.svg)]()\
 [![License](https://img.shields.io/badge/License-MIT-green.svg)]()
 
-NtExt 是一个用于WoW64直接系统调用、天堂之门（Heaven's Gate）和EDR规避的高级C++框架。可无缝加载64位kernel32并绕过用户空间挂钩。
+NtExt 是一个用于WoW64直接X64系统调用、天堂之门（Heaven's Gate）和EDR规避的高级C++框架。可无缝加载64位kernel32并绕过用户空间挂钩。
 
 如果你厌倦了传统的 Heaven's Gate 、如果你的 32 位程序急需直接调用 64 位的底层 API、或者你在寻找一个能对抗顶级用户态 Hook 的解决方案，NtExt 将是你的最终选择。
 
