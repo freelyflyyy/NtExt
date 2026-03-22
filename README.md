@@ -13,15 +13,15 @@ If you are frustrated with the instability of traditional Heaven's Gate implemen
 
 ### Highlights
 
-* **Limbo's Gate (WoW64 Direct Syscall)**
+* **Limbo's Gate (WoW64 Heaven’s Gate + Direct Syscall)**\
   I refer to this specific technique as **"Limbo's Gate"**. It allows a 32-bit process to dynamically resolve System Service Numbers (SSN) and execute raw 64-bit `syscall` instructions directly, entirely bypassing `ntdll.dll` Ring 3 hooks in both the 32-bit and 64-bit address spaces.
-* **WoW64 64-bit Kernel32 Loading**
+* **WoW64 64-bit Kernel32 Loading**\
   Loading the 64-bit `kernel32.dll` within a WoW64 process typically fails due to PEB subsystem validation in `LdrLoadDll`. NtExt utilizes a precise PEB spoofing technique (hot-swapping `IMAGE_SUBSYSTEM_WINDOWS_CUI` to `GUI`) to deceive the OS loader, enabling flawless 64-bit module initialization.
 * **The Holy Trinity of Gates**
   * **Heaven's Gate**: Seamless segment switching (`0x23` <-> `0x33`) for cross-architecture execution.
   * **Hell's Gate**: Dynamic SSN extraction directly from the in-memory 64-bit export table, eliminating hardcoded OS-specific numbers.
   * **Halo's Gate**: Defeats inline hooks by implementing a neighbourhood search algorithm (`_seachImpl`) to deduce the correct SSN from adjacent unhooked functions.
-* **Non-Virtual Interface (NVI) Architecture**
+* **Non-Virtual Interface (NVI) Architecture**\
   Provides an elegant `NtExt::Call` and `NtExt::Syscall` front-end interface backed by a thread-safe (Shared Mutex) caching system, minimizing redundant memory parsing.
 
 ### Main Functions API Reference
