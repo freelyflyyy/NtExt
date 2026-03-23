@@ -3,13 +3,31 @@
 
 namespace NtExt {
 
-	#ifdef _M_IX86
-	class Wow64Syscall : public Wow64Invoker{
-		public:
-		Wow64Syscall(_In_ DWORD64 ssn) : Wow64Invoker(ssn) {}
+    #ifdef _M_IX86
+    class Wow64Syscall : public Wow64Invoker {
+        private:
+        WORD _ssn;
+        DWORD64 _args[ 16 ] = { 0 };
 
-		protected:
-        VOID EmitOpcode(_Inout_ std::string* pShell) override {
+        public:
+        Wow64Syscall(_In_ WORD ssn) : _ssn(ssn) {}
+
+        template<typename... Args>
+        DWORD64 operator()(Args... args) {
+            memset(_args, 0, sizeof(_args));
+            if constexpr ( sizeof...(args) > 0 ) {
+                DWORD i = 0;
+                ((_args[ i++ ] = (DWORD64) args), ...);
+            }
+            return Invoke();
+        }
+
+        protected:
+        virtual VOID onPrepareEnv(_Inout_ std::string* pShell) override {
+            InjectPrepareEnv(pShell, _args);
+        }
+
+        virtual VOID onEmitOpcode(_Inout_ std::string* pShell) override {
             BYTE syscall_stub[] = {
                 0x4C, 0x8D, 0x1D, 0x0C, 0x00, 0x00, 0x00,
                 0x41, 0x53,
@@ -18,9 +36,9 @@ namespace NtExt {
                 0x0F, 0x05,
                 0x48, 0x83, 0xC4, 0x08
             };
-            *(DWORD*) (syscall_stub + 13) = (DWORD) _global_target;
+            *(DWORD*) (syscall_stub + 13) = (DWORD) _ssn;
             pShell->append((char*) syscall_stub, sizeof(syscall_stub));
         }
-	};
-	#endif // _M_IX86
+    };
+    #endif // _M_IX86
 }

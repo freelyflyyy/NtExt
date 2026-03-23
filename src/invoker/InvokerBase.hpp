@@ -60,31 +60,26 @@ namespace NtExt {
 		InvokerBase(const InvokerBase&) = delete;
 		InvokerBase& operator=(const InvokerBase&) = delete;
 
-		template<typename... Args>
-		DWORD64 operator()(Args... args) {
-			memset(_global_args, 0, sizeof(_global_args));
-
-			if constexpr ( sizeof...(args) > 0 ) {
-				DWORD i = 0;
-				((_global_args[ i++ ] = (DWORD64) args), ...);
-			}
-
-			return Invoke();
-		}
-
 		protected:
-		InvokerBase(_In_ DWORD64 target) : _global_target(target), _pExecuteMemory(nullptr){}
+		InvokerBase() : _pExecuteMemory(nullptr){}
 
-		DWORD64 _global_target;
-		DWORD64 _global_args[ 16 ] = { 0 };
 		LPVOID _pExecuteMemory;
 
+		virtual VOID onBackupEnv(_Inout_ std::string* pShell) = 0;
+		virtual VOID onRestoreEnv(_Inout_ std::string* pShell) = 0;
+		virtual VOID onPrepareEnv(_Inout_ std::string* pShell) {}
+		virtual VOID onEmitOpcode(_Inout_ std::string* pShell) {}
 
-		virtual VOID EmitOpcode(_Inout_ std::string* pShell) = 0;
-		virtual BOOL CompileRoutine(_Inout_ std::string* pShell) = 0;
+		virtual BOOL CompileRoutine(_Inout_ std::string* pShell) {
+			if ( !pShell ) return FALSE;
+			onBackupEnv(pShell); 
+			onPrepareEnv(pShell);
+			onEmitOpcode(pShell);  
+			onRestoreEnv(pShell);
+			return TRUE;
+		}
 
 		DWORD64 Invoke() {
-			if ( !_global_target ) return 0;
 
 			if ( !_pExecuteMemory ) {
 				std::string shellcode;
