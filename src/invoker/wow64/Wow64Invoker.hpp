@@ -38,28 +38,27 @@ namespace NtExt {
 
 	class Wow64Invoker : public InvokerBase {
 		protected:
-		Wow64Invoker(DWORD64 target) : InvokerBase(target){}
+		Wow64Invoker() : InvokerBase(){}
 
-		private:
-        virtual BOOL CompileRoutine(_Inout_ std::string* pShell) override {
-            if ( !pShell ) return FALSE;
-
-			BYTE _prepare_env_temp[sizeof(Internal::prepare_env)];
+		VOID InjectPrepareEnv(_Inout_ std::string* pShell, DWORD64* pArgs) {
+			BYTE _prepare_env_temp[ sizeof(Internal::prepare_env) ];
 			memcpy(_prepare_env_temp, Internal::prepare_env, sizeof(Internal::prepare_env));
-			*(DWORD64*) (_prepare_env_temp + 2) = (DWORD64) _global_args;
+			*(DWORD64*) (_prepare_env_temp + 2) = (DWORD64) pArgs;
 			*(DWORD64*) (_prepare_env_temp + 12) = (DWORD64) 16;
+			pShell->append((char*) _prepare_env_temp, sizeof(_prepare_env_temp));
+		}
 
-			//bytecode concatenation
-            pShell->append((char*) Internal::backup_env_x86, sizeof(Internal::backup_env_x86));			 // backup x86 envirenment
-			pShell->append((char*) Internal::jmp_x64, sizeof(Internal::jmp_x64));                        // swich cs rigester to 0x33
-			pShell->append((char*) Internal::backup_env, sizeof(Internal::backup_env));                  // backup x64 envirenment
-			pShell->append((char*) _prepare_env_temp, sizeof(_prepare_env_temp));                        // push the parameters onto the stack
-			EmitOpcode(pShell);                                                                          // splice call function method
-			pShell->append((char*) Internal::restore_env, sizeof(Internal::restore_env) - 1);            // restore x64 envirenment
-			pShell->append((char*) Internal::jmp_x86, sizeof(Internal::jmp_x86));                        // switch cs regester to 0x23
-			pShell->append((char*) Internal::restore_env_x86, sizeof(Internal::restore_env_x86));        // restore x86 envirenment
-			return TRUE;
-        }
+		virtual void onBackupEnv(_Inout_ std::string* pShell) override {
+			pShell->append((char*) Internal::backup_env_x86, sizeof(Internal::backup_env_x86));
+			pShell->append((char*) Internal::jmp_x64, sizeof(Internal::jmp_x64));
+			pShell->append((char*) Internal::backup_env, sizeof(Internal::backup_env));
+		}
+
+		virtual void onRestoreEnv(_Inout_ std::string* pShell) override {
+			pShell->append((char*) Internal::restore_env, sizeof(Internal::restore_env) - 1);
+			pShell->append((char*) Internal::jmp_x86, sizeof(Internal::jmp_x86));
+			pShell->append((char*) Internal::restore_env_x86, sizeof(Internal::restore_env_x86));
+		}
 	};
 	#endif
 }

@@ -11,9 +11,11 @@ set(HEADER_INVOKER
     "invoker/wow64/Wow64Invoker.hpp"
     "invoker/wow64/Wow64Call.hpp"
     "invoker/wow64/Wow64Syscall.hpp"
+    "invoker/wow64/Wow64Anycall.hpp"
     "invoker/x64/X64Invoker.hpp"
     "invoker/x64/X64Call.hpp"
     "invoker/x64/X64Syscall.hpp"
+    "invoker/x64/X64Anycall.hpp"
     "invoker/NtExtInvokers.hpp"
 )
 
