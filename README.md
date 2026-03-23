@@ -2,9 +2,15 @@
 
 [English](README.md) | [简体中文](README_CN.md)
 
+<div align="center">
+
 [![Language](https://img.shields.io/badge/Language-C++17-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B17)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20x86%2Fx64-lightgrey.svg)]()
+[![Platform](https://img.shields.io/badge/Platform-Windows%20x64%20%7C%20WoW64-lightgrey.svg)]()
+[![Build](https://img.shields.io/badge/Build-CMake-orange.svg)]()
+[![Architecture](https://img.shields.io/badge/Arch-Zero%20Inline%20Assembly-critical.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-green.svg)]()
+
+</div>
 
 <a id="english"></a>
 NtExt is an advanced C++ framework for **WoW64 Heaven’s Gate + Direct Syscall** , Heaven's Gate, and EDR evasion. and load 64-bit kernel32 and bypass user-land hooks.
