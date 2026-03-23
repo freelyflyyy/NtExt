@@ -3,6 +3,12 @@
 using namespace NtExt;
 
 int main() {
+    DWORD64 teb64 = Resolver.GetTeb64();
+    std::cout << "TEB64: 0x" << std::hex << teb64 << std::endl;
+
+    DWORD64 peb64 = Resolver.GetPeb64();
+    std::cout << "PEB64: 0x" << std::hex << peb64 << std::endl;
+
     DWORD64 ntdll64 = Resolver.GetNtdll64();
 
     //normal call Nt function

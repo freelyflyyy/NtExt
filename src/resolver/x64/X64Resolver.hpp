@@ -12,17 +12,33 @@ namespace NtExt {
 
 		~X64Resolver() override = default;
 
-		DWORD64 NTAPI GetSyscallNumber64(DWORD64 hMod, const char* funcName) override;
-		DWORD64 NTAPI GetModuleLdrEntry64(const wchar_t* moduleName) override;
-		DWORD64 NTAPI GetModuleBase64(const wchar_t* moduleName) override;
-		DWORD64 NTAPI GetTeb64() override;
-		DWORD64 NTAPI GetPeb64() override;
-		DWORD64 NTAPI GetNtdll64() override;
-		DWORD64 NTAPI GetKernel64() override;
-		DWORD64 NTAPI LoadLibrary64(const wchar_t* moduleName) override;
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetSyscallNumber64(_In_ DWORD64 hMod, _In_z_ const char* funcName) override;
+
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetModuleLdrEntry64(_In_z_ const wchar_t* moduleName) override;
+
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetModuleBase64(_In_z_ const wchar_t* moduleName) override;
+
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetTeb64() override;
+
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetPeb64() override;
+
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetNtdll64() override;
+
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetKernel64() override;
+
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI LoadLibrary64(_In_z_ const wchar_t* moduleName) override;
 
 		protected:
-		DWORD64 NTAPI _GetProcAddress64(DWORD64 hMod, const char* funcName) override;
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI _GetProcAddress64(_In_ DWORD64 hMod, _In_z_ const char* funcName) override;
 
 		private:
 		X64Resolver() = default;

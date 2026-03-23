@@ -3,7 +3,7 @@
 #pragma warning(disable: 4251)
 
 namespace NtExt {
-    VOID NTAPI ResolverBase::_MakeUTFStrVa(LPCWSTR lpString, LPBYTE outBuffer, SIZE_T pointerSize) {
+    VOID NTAPI ResolverBase::_MakeUTFStrVa(_In_z_ LPCWSTR lpString, _Out_ LPBYTE outBuffer, _In_ SIZE_T pointerSize) {
         if ( !lpString || !outBuffer ) return;
         SIZE_T len = wcslen(lpString);
         *(USHORT*) (outBuffer) = (USHORT) len * sizeof(WCHAR);
@@ -20,7 +20,7 @@ namespace NtExt {
         outStr[ len ] = L'\0';
     }
 
-    VOID ResolverBase::_MakeANSIStrVa(LPCSTR lpString, LPBYTE outBuffer, SIZE_T pointerSize) {
+    VOID NTAPI ResolverBase::_MakeANSIStrVa(_In_z_ LPCSTR lpString, _Out_ LPBYTE outBuffer, _In_ SIZE_T pointerSize) {
         if ( !lpString || !outBuffer ) return;
         SIZE_T len = strlen(lpString);
         *(USHORT*) (outBuffer) = (USHORT) len;

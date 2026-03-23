@@ -12,7 +12,8 @@ namespace NtExt {
         X64Anycall(_In_ const std::string& opcode) : _opcode(opcode) {}
         ~X64Anycall() = default;
 
-        DWORD64 operator()() {
+        _Check_return_ _Success_(return != 0)
+            DWORD64 operator()() {
             return Invoke();
         }
 

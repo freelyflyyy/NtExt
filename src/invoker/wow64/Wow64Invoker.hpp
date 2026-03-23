@@ -38,9 +38,9 @@ namespace NtExt {
 
 	class Wow64Invoker : public InvokerBase {
 		protected:
-		Wow64Invoker() : InvokerBase(){}
+		Wow64Invoker() : InvokerBase() {}
 
-		VOID InjectPrepareEnv(_Inout_ std::string* pShell, DWORD64* pArgs) {
+		VOID InjectPrepareEnv(_Inout_ std::string* pShell, _In_reads_(16) DWORD64* pArgs) {
 			BYTE _prepare_env_temp[ sizeof(Internal::prepare_env) ];
 			memcpy(_prepare_env_temp, Internal::prepare_env, sizeof(Internal::prepare_env));
 			*(DWORD64*) (_prepare_env_temp + 2) = (DWORD64) pArgs;

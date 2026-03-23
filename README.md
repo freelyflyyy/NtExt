@@ -1,10 +1,15 @@
-# NtExt
+<div align="center">
+<h1>NtExt</h1>
 
 [English](README.md) | [简体中文](README_CN.md)
 
 [![Language](https://img.shields.io/badge/Language-C++17-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B17)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20x86%2Fx64-lightgrey.svg)]()
+[![Platform](https://img.shields.io/badge/Platform-Windows%20x64%20%7C%20WoW64-lightgrey.svg)]()
+[![Build](https://img.shields.io/badge/Build-CMake-orange.svg)]()
+[![Architecture](https://img.shields.io/badge/Arch-Zero%20Inline%20Assembly-critical.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-green.svg)]()
+
+</div>
 
 <a id="english"></a>
 NtExt is an advanced C++ framework for **WoW64 Heaven’s Gate + Direct Syscall** , Heaven's Gate, and EDR evasion. and load 64-bit kernel32 and bypass user-land hooks.
@@ -21,8 +26,8 @@ If you are frustrated with the instability of traditional Heaven's Gate implemen
   * **Heaven's Gate**: Seamless segment switching (`0x23` <-> `0x33`) for cross-architecture execution.
   * **Hell's Gate**: Dynamic SSN extraction directly from the in-memory 64-bit export table, eliminating hardcoded OS-specific numbers.
   * **Halo's Gate**: Defeats inline hooks by implementing a neighbourhood search algorithm (`_seachImpl`) to deduce the correct SSN from adjacent unhooked functions.
-* **Non-Virtual Interface (NVI) Architecture**\
-  Provides an elegant `NtExt::Call` and `NtExt::Syscall` front-end interface backed by a thread-safe (Shared Mutex) caching system, minimizing redundant memory parsing.
+* **Zero-Inline-Assembly Architecture**\
+  Powered by a JIT-style dynamic bytecode injection mechanism rather than compiler-specific assembly syntax. It achieves ultimate cross-compiler compatibility (MSVC / GCC / Clang) while maintaining zero-overhead execution in memory.
 
 ### Main Functions API Reference
 
