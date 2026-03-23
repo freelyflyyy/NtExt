@@ -21,8 +21,8 @@ If you are frustrated with the instability of traditional Heaven's Gate implemen
   * **Heaven's Gate**: Seamless segment switching (`0x23` <-> `0x33`) for cross-architecture execution.
   * **Hell's Gate**: Dynamic SSN extraction directly from the in-memory 64-bit export table, eliminating hardcoded OS-specific numbers.
   * **Halo's Gate**: Defeats inline hooks by implementing a neighbourhood search algorithm (`_seachImpl`) to deduce the correct SSN from adjacent unhooked functions.
-* **Non-Virtual Interface (NVI) Architecture**\
-  Provides an elegant `NtExt::Call` and `NtExt::Syscall` front-end interface backed by a thread-safe (Shared Mutex) caching system, minimizing redundant memory parsing.
+* **Zero-Inline-Assembly Architecture**\
+  Powered by a JIT-style dynamic bytecode injection mechanism rather than compiler-specific assembly syntax. It achieves ultimate cross-compiler compatibility (MSVC / GCC / Clang) while maintaining zero-overhead execution in memory.
 
 ### Main Functions API Reference
 
