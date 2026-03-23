@@ -61,7 +61,7 @@ namespace NtExt {
 		InvokerBase& operator=(const InvokerBase&) = delete;
 
 		protected:
-		InvokerBase() : _pExecuteMemory(nullptr){}
+		InvokerBase() : _pExecuteMemory(nullptr) {}
 
 		LPVOID _pExecuteMemory;
 
@@ -70,17 +70,19 @@ namespace NtExt {
 		virtual VOID onPrepareEnv(_Inout_ std::string* pShell) {}
 		virtual VOID onEmitOpcode(_Inout_ std::string* pShell) {}
 
-		virtual BOOL CompileRoutine(_Inout_ std::string* pShell) {
+		_Check_return_ _Success_(return != FALSE)
+			virtual BOOL CompileRoutine(_Inout_ std::string* pShell) {
 			if ( !pShell ) return FALSE;
-			onBackupEnv(pShell); 
+			onBackupEnv(pShell);
 			onPrepareEnv(pShell);
-			onEmitOpcode(pShell);  
+			onEmitOpcode(pShell);
 			onRestoreEnv(pShell);
 			return TRUE;
 		}
 
-		DWORD64 Invoke() {
-
+		public:
+		_Check_return_ _Success_(return != 0)
+			DWORD64 Invoke() {
 			if ( !_pExecuteMemory ) {
 				std::string shellcode;
 				if ( !CompileRoutine(&shellcode) ) return 0;

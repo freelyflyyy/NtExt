@@ -5,14 +5,15 @@ namespace NtExt {
     #ifdef _WIN64
     class X64Call : public X64Invoker {
         private:
-        DWORD64 _funcAddr;         
+        DWORD64 _funcAddr;
         DWORD64 _args[ 16 ] = { 0 };
 
         public:
         X64Call(_In_ DWORD64 funcAddr) : _funcAddr(funcAddr) {}
 
         template<typename... Args>
-        DWORD64 operator()(Args... args) {
+        _Check_return_ _Success_(return != 0)
+            DWORD64 operator()(Args... args) {
             memset(_args, 0, sizeof(_args));
             if constexpr ( sizeof...(args) > 0 ) {
                 DWORD i = 0;

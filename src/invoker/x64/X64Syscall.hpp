@@ -12,7 +12,8 @@ namespace NtExt {
         X64Syscall(_In_ WORD ssn) : _ssn(ssn) {}
 
         template<typename... Args>
-        DWORD64 operator()(Args... args) {
+        _Check_return_ _Success_(return != 0)
+            DWORD64 operator()(Args... args) {
             memset(_args, 0, sizeof(_args));
             if constexpr ( sizeof...(args) > 0 ) {
                 DWORD i = 0;

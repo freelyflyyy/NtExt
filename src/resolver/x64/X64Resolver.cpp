@@ -1,16 +1,15 @@
 #include "X64Resolver.hpp"
-#include "../../internal/NtAsm.h"
 #include "../../internal/NtApi.h"
 #include "../../invoker/NtExtInvokers.hpp"
 
 namespace NtExt {
 	#ifdef _WIN64
-	DWORD64 NTAPI X64Resolver::_GetProcAddress64(DWORD64 hMod, const char* funcName) {
+	DWORD64 NTAPI X64Resolver::_GetProcAddress64(_In_ DWORD64 hMod, _In_z_ const char* funcName) {
 		if ( !hMod || !funcName ) return 0;
 		return (DWORD64) GetProcAddress((HMODULE) hMod, funcName);
 	}
 
-	DWORD64 X64Resolver::GetSyscallNumber64(DWORD64 hMod, const char* funcName) {
+	DWORD64 X64Resolver::GetSyscallNumber64(_In_ DWORD64 hMod, _In_z_ const char* funcName) {
 		if ( !hMod || !funcName ) return 0;
 		DWORD64 funcAddr64 = this->GetProcAddress64(hMod, funcName);
 		if ( !funcAddr64 ) return 0;
@@ -39,7 +38,7 @@ namespace NtExt {
 		return _seachImpl(_seachImpl, funcAddr64 - 0x20, funcAddr64 + 0x20, 1);
 	}
 
-	DWORD64 NTAPI X64Resolver::GetModuleLdrEntry64(const wchar_t* moduleName) {
+	DWORD64 NTAPI X64Resolver::GetModuleLdrEntry64(_In_z_ const wchar_t* moduleName) {
 		if ( !moduleName ) return 0;
 		PEB64* _peb64 = (PEB64*) GetPeb64();
 		if ( !_peb64->Ldr ) return 0;
@@ -60,7 +59,7 @@ namespace NtExt {
 		return 0;
 	}
 
-	DWORD64 NTAPI X64Resolver::GetModuleBase64(const wchar_t* moduleName) {
+	DWORD64 NTAPI X64Resolver::GetModuleBase64(_In_z_ const wchar_t* moduleName) {
 		if ( !moduleName ) return 0;
 		LDR_DATA_TABLE_ENTRY64* entry = (LDR_DATA_TABLE_ENTRY64*) GetModuleLdrEntry64(moduleName);
 		if ( !entry ) return 0;
@@ -68,15 +67,11 @@ namespace NtExt {
 	}
 
 	DWORD64 NTAPI X64Resolver::GetTeb64() {
-		Reg64 _teb64 = { 0 };
-		_teb64.v = __readgsqword(FIELD_OFFSET(NT_TIB, Self));
-		return _teb64.v;
+		return __readgsqword(FIELD_OFFSET(NT_TIB, Self));
 	}
 
 	DWORD64 NTAPI X64Resolver::GetPeb64() {
-		Reg64 _peb64 = { 0 };
-		_peb64.v = __readgsqword(FIELD_OFFSET(TEB, ProcessEnvironmentBlock));
-		return _peb64.v;
+		return __readgsqword(FIELD_OFFSET(TEB, ProcessEnvironmentBlock));
 	}
 
 	DWORD64 NTAPI X64Resolver::GetNtdll64() {
@@ -93,7 +88,7 @@ namespace NtExt {
 		return _kernel64;
 	}
 
-	DWORD64 NTAPI X64Resolver::LoadLibrary64(const wchar_t* moduleName) {
+	DWORD64 NTAPI X64Resolver::LoadLibrary64(_In_z_ const wchar_t* moduleName) {
 		if ( !moduleName ) return 0;
 
 		DWORD64 hMod = GetModuleBase64(moduleName);

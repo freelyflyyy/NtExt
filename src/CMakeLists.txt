@@ -2,7 +2,6 @@ set(HEADER_MAIN "NtExt.hpp")
 
 set(HEADER_INTERNAL 
     "internal/NtApi.h"
-    "internal/NtAsm.h"
 )
 source_group("Internal" FILES ${HEADER_INTERNAL})
 
