@@ -1,5 +1,5 @@
 <div align="center">
-# NtExt
+<h1>NtExt</h1>
 
 [English](README.md) | [简体中文](README_CN.md)
 
