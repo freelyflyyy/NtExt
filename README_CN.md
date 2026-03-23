@@ -1,8 +1,8 @@
-# NtExt
+<div align="center">
+  
+<h1>NtExt</h1>
 
 [English](README.md) | [简体中文](README_CN.md)
-
-<div align="center">
 
 [![Language](https://img.shields.io/badge/Language-C++17-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B17)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20x64%20%7C%20WoW64-lightgrey.svg)]()
