@@ -48,7 +48,8 @@ NtExt seamlessly supports both WoW64 (32-bit) and Native x64 (64-bit) environmen
 | `GetLdrGetProcedureAddress64`| **[Ex]** | Get the address of the `LdrGetProcedureAddress` function in 64-bit |
 | `Call` | **[Ex]** | Cross-architecture call to a specified 64-bit function |
 | `Syscall` | **[Ex]** | Cross-architecture direct Syscall to a 64-bit function |
-| `memcpy64` | **[Ex] | Safe memory copy bridging 32-bit and 64-bit address spaces |
+| `Anycall` | **[Ex]** | Support dynamic execution of x64 assembly code, featuring automatic stack alignment and non-volatile register restoration |
+| `memcpy64` | **[Ex]** | Safe memory copy bridging 32-bit and 64-bit address spaces |
 
 ### Usage
 
