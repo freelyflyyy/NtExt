@@ -24,13 +24,13 @@ int main() {
     //direct syscall Nt function
     DWORD64 ssn = Resolver.GetSyscallNumber64(ntdll64, "NtReadVirtualMemory");
     WORD dosMagic = 0;
-    NTSTATUS status2 = Syscall((WORD) ssn)(
-        (DWORD64) -1,               
-        (DWORD64) ntdll64,          
-        (DWORD64) &dosMagic,        
-        (DWORD64) sizeof(dosMagic), 
-        (DWORD64) 0                 
-        );
+	NTSTATUS status2 = Syscall((WORD) ssn)(
+		(DWORD64) -1,
+		(DWORD64) ntdll64,
+		(DWORD64) &dosMagic,
+		(DWORD64) sizeof(dosMagic),
+		(DWORD64) 0
+		);
     std::cout << "NTDLL DOS Magic: 0x" << std::hex << dosMagic << std::endl;
     return 0;
 }

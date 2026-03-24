@@ -13,7 +13,7 @@ namespace NtExt {
         Wow64Call(_In_ DWORD64 funcAddr) : _funcAddr(funcAddr) {}
 
         template<typename... Args>
-        _Check_return_ _Success_(return != 0)
+        _Check_return_
             DWORD64 operator()(Args... args) {
             memset(_args, 0, sizeof(_args));
             if constexpr ( sizeof...(args) > 0 ) {

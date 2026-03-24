@@ -16,7 +16,8 @@ namespace NtExt {
 		MakeANSIStr<DWORD64>(funcName, fName);
 
 		DWORD64 rect = 0;
-		Call(ldrGetProcedureAddress)(
+
+		(void) Call(ldrGetProcedureAddress)(
 			(DWORD64) hMod,
 			(DWORD64) &fName,
 			(DWORD64) 0,
@@ -25,12 +26,13 @@ namespace NtExt {
 		return rect;
 	}
 
-	DWORD64 Wow64Resolver::GetSyscallNumber64(_In_ DWORD64 hMod, _In_z_ const char* funcName) {
+	_Check_return_ _Success_(return != 0)
+		DWORD64 NTAPI Wow64Resolver::GetSyscallNumber64(_In_ DWORD64 hMod, _In_z_ const char* funcName) {
 		if ( !hMod || !funcName ) return 0;
 		DWORD64 funcAddr64 = this->GetProcAddress64(hMod, funcName);
 		if ( !funcAddr64 ) return 0;
 
-		auto CheckHook = [this] (DWORD64& funcAddr) -> WORD {
+		auto _getSSN = [this] (DWORD64& funcAddr) -> WORD {
 			BYTE opcodes[ 8 ] = { 0 };
 			memcpy64(&opcodes, funcAddr, sizeof(DWORD64));
 			if ( opcodes[ 0 ] == 0x4C && opcodes[ 1 ] == 0x8B && opcodes[ 2 ] == 0xD1 && opcodes[ 3 ] == 0xB8 ) {
@@ -39,23 +41,24 @@ namespace NtExt {
 			return 0;
 		};
 
-		auto _seachImpl = [CheckHook] (auto&& self, DWORD64 upAddr, DWORD64 downAddr, WORD depth = 0) -> WORD {
+		auto _seachImpl = [_getSSN] (auto&& self, DWORD64 upAddr, DWORD64 downAddr, WORD depth = 0) -> WORD {
 			if ( depth >= 500 ) return 0;
-			WORD upSSN = CheckHook(upAddr);
-			WORD downSSN = CheckHook(downAddr);
+			WORD upSSN = _getSSN(upAddr);
+			WORD downSSN = _getSSN(downAddr);
 			if ( upSSN != 0 && downSSN != 0 ) {
 				if ( downSSN - upSSN == depth * 2 ) return upSSN + depth;
 			}
 			return self(self, upAddr - 0x20, downAddr + 0x20, depth + 1);
 		};
 
-		WORD baseSSN = CheckHook(funcAddr64);
+		WORD baseSSN = _getSSN(funcAddr64);
 		if ( baseSSN != 0 ) return baseSSN;
 
 		return _seachImpl(_seachImpl, funcAddr64 - 0x20, funcAddr64 + 0x20, 1);
 	}
 
-	DWORD64 NTAPI Wow64Resolver::GetModuleLdrEntry64(_In_z_ const wchar_t* moduleName) {
+	_Check_return_ _Success_(return != 0)
+		DWORD64 NTAPI Wow64Resolver::GetModuleLdrEntry64(_In_z_ const wchar_t* moduleName) {
 		DWORD64 teb64Addr = GetTeb64();
 		if ( teb64Addr == 0 ) return 0;
 
@@ -90,7 +93,8 @@ namespace NtExt {
 		return 0;
 	}
 
-	DWORD64 NTAPI Wow64Resolver::GetModuleBase64(_In_z_ const wchar_t* moduleName) {
+	_Check_return_ _Success_(return != 0)
+		DWORD64 NTAPI Wow64Resolver::GetModuleBase64(_In_z_ const wchar_t* moduleName) {
 		if ( !moduleName ) return 0;
 		DWORD64 ldrEntry = GetModuleLdrEntry64(moduleName);
 		if ( ldrEntry == 0 ) return 0;
@@ -99,6 +103,8 @@ namespace NtExt {
 		return entry.DllBase;
 	}
 
+	#pragma warning(push)
+	#pragma warning(disable: 6101) // [修复 C6101] 让分析器不要检查 dest 究竟有没有被 C++ 代码赋值，我们有 Shellcode 帮我们做
 	VOID NTAPI Wow64Resolver::memcpy64(_Out_writes_bytes_all_(sz) VOID* dest, _In_ DWORD64 src, _In_ SIZE_T sz) {
 		if ( (nullptr == dest) || (0 == src) || (0 == sz) ) return;
 
@@ -117,8 +123,10 @@ namespace NtExt {
 		*(DWORD*) (shellcode + 1) = (DWORD) dest;
 		*(DWORD64*) (shellcode + 7) = src;
 		*(DWORD*) (shellcode + 16) = (DWORD) sz;
-		NtExt::Anycall(std::string((char*) shellcode, sizeof(shellcode)))();
+
+		(void) NtExt::Anycall(std::string((char*) shellcode, sizeof(shellcode)))();
 	}
+	#pragma warning(pop)
 
 	VOID NTAPI Wow64Resolver::memcpy64(_In_ DWORD64 dest, _In_reads_bytes_(sz) VOID* src, _In_ SIZE_T sz) {
 		if ( (0 == dest) || (nullptr == src) || (0 == sz) ) return;
@@ -137,17 +145,20 @@ namespace NtExt {
 		*(DWORD64*) (shellcode + 2) = dest;
 		*(DWORD*) (shellcode + 11) = (DWORD) src;
 		*(DWORD*) (shellcode + 16) = (DWORD) sz;
-		NtExt::Anycall(std::string((char*) shellcode, sizeof(shellcode)))();
+
+		(void) NtExt::Anycall(std::string((char*) shellcode, sizeof(shellcode)))();
 	}
 
-	DWORD64 NTAPI Wow64Resolver::GetNtdll64() {
+	_Check_return_ _Success_(return != 0)
+		DWORD64 NTAPI Wow64Resolver::GetNtdll64() {
 		static DWORD64 _ntdll64 = 0;
 		if ( _ntdll64 != 0 ) return _ntdll64;
 		_ntdll64 = GetModuleBase64(L"ntdll.dll");
 		return _ntdll64;
 	}
 
-	DWORD64 NTAPI Wow64Resolver::GetKernel64() {
+	_Check_return_ _Success_(return != 0)
+		DWORD64 NTAPI Wow64Resolver::GetKernel64() {
 		static DWORD64 _kernel64 = 0;
 		if ( _kernel64 != 0 ) return _kernel64;
 
@@ -183,7 +194,7 @@ namespace NtExt {
 			subSystem = IMAGE_SUBSYSTEM_WINDOWS_GUI;
 		}
 
-		Call(LdrLoadDll)(
+		(void) Call(LdrLoadDll)(
 			(DWORD64) 0,
 			(DWORD64) 0,
 			(DWORD64) kernel32Str,
@@ -199,7 +210,8 @@ namespace NtExt {
 		return _kernel64;
 	}
 
-	DWORD64 NTAPI Wow64Resolver::LoadLibrary64(_In_z_ const wchar_t* moduleName) {
+	_Check_return_ _Success_(return != 0)
+		DWORD64 NTAPI Wow64Resolver::LoadLibrary64(_In_z_ const wchar_t* moduleName) {
 		if ( !moduleName ) return 0;
 		DWORD64 hMod = GetModuleBase64(moduleName);
 		if ( hMod != 0 ) return hMod;
@@ -227,7 +239,8 @@ namespace NtExt {
 		return 0;
 	}
 
-	DWORD NTAPI Wow64Resolver::GetModuleBase32(_In_z_ const wchar_t* moduleName) {
+	_Check_return_ _Success_(return != 0)
+		DWORD NTAPI Wow64Resolver::GetModuleBase32(_In_z_ const wchar_t* moduleName) {
 		if ( !moduleName ) return 0;
 		DWORD pebAddr = GetPeb32();
 		if ( !pebAddr ) return 0;
@@ -251,33 +264,38 @@ namespace NtExt {
 		return 0;
 	}
 
-	DWORD NTAPI Wow64Resolver::GetTeb32() {
+	_Check_return_ _Success_(return != 0)
+		DWORD NTAPI Wow64Resolver::GetTeb32() {
 		DWORD _teb32 = 0;
 		_teb32 = __readfsdword(FIELD_OFFSET(NT_TIB, Self));
 		return _teb32;
 	}
 
-	DWORD NTAPI Wow64Resolver::GetPeb32() {
+	_Check_return_ _Success_(return != 0)
+		DWORD NTAPI Wow64Resolver::GetPeb32() {
 		DWORD _peb32 = 0;
 		_peb32 = __readfsdword(FIELD_OFFSET(TEB, ProcessEnvironmentBlock));
 		return _peb32;
 	}
 
-	DWORD NTAPI Wow64Resolver::GetNtdll32() {
+	_Check_return_ _Success_(return != 0)
+		DWORD NTAPI Wow64Resolver::GetNtdll32() {
 		static DWORD _ntdll32 = 0;
 		if ( _ntdll32 != 0 ) return _ntdll32;
 		_ntdll32 = GetModuleBase32(L"ntdll.dll");
 		return _ntdll32;
 	}
 
-	DWORD Wow64Resolver::GetKernel32() {
+	_Check_return_ _Success_(return != 0)
+		DWORD NTAPI Wow64Resolver::GetKernel32() {
 		static DWORD _kernel32 = 0;
 		if ( _kernel32 != 0 ) return _kernel32;
 		_kernel32 = GetModuleBase32(L"kernel32.dll");
 		return _kernel32;
 	}
 
-	DWORD NTAPI Wow64Resolver::GetLdrGetProcedureAddress32() {
+	_Check_return_ _Success_(return != 0)
+		DWORD NTAPI Wow64Resolver::GetLdrGetProcedureAddress32() {
 		static DWORD _ldrGetProcAddr32 = 0;
 		if ( _ldrGetProcAddr32 != 0 ) return _ldrGetProcAddr32;
 
@@ -308,7 +326,8 @@ namespace NtExt {
 		return 0;
 	}
 
-	DWORD NTAPI Wow64Resolver::LoadLibrary32(_In_z_ const wchar_t* moduleName) {
+	_Check_return_ _Success_(return != 0)
+		DWORD NTAPI Wow64Resolver::LoadLibrary32(_In_z_ const wchar_t* moduleName) {
 		if ( !moduleName ) return 0;
 		DWORD hMod = GetModuleBase32(moduleName);
 		if ( hMod != 0 ) return hMod;
@@ -328,7 +347,8 @@ namespace NtExt {
 		return 0;
 	}
 
-	DWORD64 NTAPI Wow64Resolver::GetLdrGetProcedureAddress64() {
+	_Check_return_ _Success_(return != 0)
+		DWORD64 NTAPI Wow64Resolver::GetLdrGetProcedureAddress64() {
 		DWORD64 dllBase = GetNtdll64();
 		if ( !dllBase ) return 0;
 
@@ -358,11 +378,13 @@ namespace NtExt {
 		return 0;
 	}
 
-	DWORD64 NTAPI Wow64Resolver::GetTeb64() {
+	_Check_return_ _Success_(return != 0)
+		DWORD64 NTAPI Wow64Resolver::GetTeb64() {
 		return Anycall(std::string("\x65\x48\x8B\x04\x25\x30\x00\x00\x00", 9))();  // mov rax, qword ptr gs:[0x30]
 	}
 
-	DWORD64 NTAPI Wow64Resolver::GetPeb64() {
+	_Check_return_ _Success_(return != 0)
+		DWORD64 NTAPI Wow64Resolver::GetPeb64() {
 		return Anycall(std::string("\x65\x48\x8B\x04\x25\x60\x00\x00\x00", 9))();  // mov rax, qword ptr gs:[0x60]
 	}
 	#endif
