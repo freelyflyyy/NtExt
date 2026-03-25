@@ -18,7 +18,7 @@ namespace NtExt {
         }
 
         protected:
-        virtual VOID onEmitOpcode(_Inout_ std::string* pShell) override {
+        VOID onEmitOpcode(_Inout_ std::string* pShell) override {
             pShell->append(_opcode);
         }
     };

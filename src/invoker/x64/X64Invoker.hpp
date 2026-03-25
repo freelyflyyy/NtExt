@@ -7,7 +7,7 @@ namespace NtExt {
 		protected:
 		X64Invoker() : InvokerBase() {}
 
-		VOID InjectPrepareEnv(_Inout_ std::string* pShell, _In_reads_(16) DWORD64* pArgs) {
+		static VOID InjectPrepareEnv(_Inout_ std::string* pShell, _In_reads_(16) const DWORD64* pArgs) {
 			BYTE _prepare_env_temp[ sizeof(Internal::prepare_env) ];
 			memcpy(_prepare_env_temp, Internal::prepare_env, sizeof(Internal::prepare_env));
 			*(DWORD64*) (_prepare_env_temp + 2) = (DWORD64) pArgs;
@@ -15,11 +15,11 @@ namespace NtExt {
 			pShell->append((char*) _prepare_env_temp, sizeof(_prepare_env_temp));
 		}
 
-		virtual void onBackupEnv(_Inout_ std::string* pShell) override {
+		VOID onBackupEnv(_Inout_ std::string* pShell) override {
 			pShell->append((char*) Internal::backup_env, sizeof(Internal::backup_env));
 		}
 
-		virtual void onRestoreEnv(_Inout_ std::string* pShell) override {
+		VOID onRestoreEnv(_Inout_ std::string* pShell) override {
 			pShell->append((char*) Internal::restore_env, sizeof(Internal::restore_env));
 		}
 	};

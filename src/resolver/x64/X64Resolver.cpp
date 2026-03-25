@@ -16,7 +16,7 @@ namespace NtExt {
 		DWORD64 funcAddr64 = this->GetProcAddress64(hMod, funcName);
 		if ( !funcAddr64 ) return 0;
 
-		auto _getSysPacked = [this] (DWORD64 funcAddr) -> DWORD64 {
+		auto _getSysPacked = [] (DWORD64 funcAddr) -> DWORD64 {
 			BYTE* opcodes = (BYTE*) funcAddr;
 			if ( opcodes[ 0 ] == 0x4C && opcodes[ 1 ] == 0x8B && opcodes[ 2 ] == 0xD1 && opcodes[ 3 ] == 0xB8 ) {
 				WORD _ssn = opcodes[ 5 ] << 8 | opcodes[ 4 ];
@@ -26,7 +26,7 @@ namespace NtExt {
 			return 0;
 		};
 
-		auto _seachImpl = [&_getSysPacked] (auto&& self, DWORD64 upAddr, DWORD64 downAddr, WORD depth = 0) -> DWORD64 {
+		auto _searchImpl = [&_getSysPacked] (auto&& self, DWORD64 upAddr, DWORD64 downAddr, WORD depth = 0) -> DWORD64 {
 			if ( depth >= 500 ) return 0;
 			DWORD64 _upPacked = _getSysPacked(upAddr);
 			DWORD64 _downPacked = _getSysPacked(downAddr);
@@ -45,21 +45,21 @@ namespace NtExt {
 		DWORD64 basePacked = _getSysPacked(funcAddr64);
 		if ( basePacked != 0 ) return basePacked;
 
-		return _seachImpl(_seachImpl, funcAddr64 - 0x20, funcAddr64 + 0x20, 1);
+		return _searchImpl(_searchImpl, funcAddr64 - 0x20, funcAddr64 + 0x20, 1);
 	}
 
 	_Check_return_ _Success_(return != 0)
 		DWORD64 NTAPI X64Resolver::GetModuleLdrEntry64(_In_z_ const wchar_t* moduleName) {
 		if ( !moduleName ) return 0;
-		PEB64* _peb64 = (PEB64*) GetPeb64();
+		auto* _peb64 = (PEB64*) GetPeb64();
 		if ( !_peb64->Ldr ) return 0;
 
-		PEB_LDR_DATA64* _ldr64 = (PEB_LDR_DATA64*) _peb64->Ldr;
+		auto _ldr64 = (PEB_LDR_DATA64*) _peb64->Ldr;
 		DWORD64 head = _peb64->Ldr + offsetof(PEB_LDR_DATA64, InLoadOrderModuleList);
 		DWORD64 current = _ldr64->InLoadOrderModuleList.Flink;
 
 		while ( head != current && current != 0 ) {
-			LDR_DATA_TABLE_ENTRY64* entry = (LDR_DATA_TABLE_ENTRY64*) current;
+			auto entry = (LDR_DATA_TABLE_ENTRY64*) current;
 			if ( entry->BaseDllName.Buffer != 0 && entry->BaseDllName.Length > 0 ) {
 				if ( !_wcsnicmp((WCHAR*) entry->BaseDllName.Buffer, moduleName, entry->BaseDllName.Length / sizeof(WCHAR)) ) {
 					return current;
@@ -73,7 +73,7 @@ namespace NtExt {
 	_Check_return_ _Success_(return != 0)
 		DWORD64 NTAPI X64Resolver::GetModuleBase64(_In_z_ const wchar_t* moduleName) {
 		if ( !moduleName ) return 0;
-		LDR_DATA_TABLE_ENTRY64* entry = (LDR_DATA_TABLE_ENTRY64*) GetModuleLdrEntry64(moduleName);
+		auto* entry = (LDR_DATA_TABLE_ENTRY64*) GetModuleLdrEntry64(moduleName);
 		if ( !entry ) return 0;
 		return entry->DllBase;
 	}

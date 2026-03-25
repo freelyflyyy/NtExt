@@ -9,7 +9,7 @@ namespace NtExt {
         std::string _opcode;
 
         public:
-        Wow64Anycall(_In_ const std::string& opcode) : _opcode(opcode) {}
+        Wow64Anycall(_In_ std::string  opcode) : _opcode(std::move(opcode)) {}
 
         _Check_return_
             DWORD64 operator()() {
@@ -17,7 +17,7 @@ namespace NtExt {
         }
 
         protected:
-        virtual VOID onEmitOpcode(_Inout_ std::string* pShell) override {
+        VOID onEmitOpcode(_Inout_ std::string* pShell) override {
             pShell->append(_opcode);
         }
     };

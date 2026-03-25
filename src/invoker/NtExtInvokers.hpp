@@ -21,8 +21,8 @@ namespace NtExt {
     #endif
 
     #ifdef _M_IX86
-    _Check_return_ inline Wow64Call Call(_In_ DWORD64 target) { return Wow64Call(target); }
-    _Check_return_ inline Wow64Syscall Syscall(_In_ DWORD64 ssn) { return Wow64Syscall(ssn); }
-    _Check_return_ inline Wow64Anycall Anycall(_In_ const std::string& opcode) { return Wow64Anycall(opcode); }
+    _Check_return_ inline Wow64Call Call(_In_ DWORD64 target) { return {target}; }
+    _Check_return_ inline Wow64Syscall Syscall(_In_ DWORD64 ssn) { return {ssn}; }
+    _Check_return_ inline Wow64Anycall Anycall(_In_ const std::string& opcode) { return {opcode}; }
     #endif
 }

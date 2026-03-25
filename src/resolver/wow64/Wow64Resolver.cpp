@@ -43,7 +43,7 @@ namespace NtExt {
 			return 0;
 		};
 
-		auto _seachImpl = [&_getSysPacked] (auto&& self, DWORD64 upAddr, DWORD64 downAddr, WORD depth = 0) -> DWORD64 {
+		auto _searchImpl = [&_getSysPacked] (auto&& self, DWORD64 upAddr, DWORD64 downAddr, WORD depth = 0) -> DWORD64 {
 			if ( depth >= 500 ) return 0;
 			DWORD64 _upPacked = _getSysPacked(upAddr);
 			DWORD64 _downPacked = _getSysPacked(downAddr);
@@ -62,7 +62,7 @@ namespace NtExt {
 		DWORD64 basePacked = _getSysPacked(funcAddr64);
 		if ( basePacked != 0 ) return basePacked;
 
-		return _seachImpl(_seachImpl, funcAddr64 - 0x20, funcAddr64 + 0x20, 1);
+		return _searchImpl(_searchImpl, funcAddr64 - 0x20, funcAddr64 + 0x20, 1);
 	}
 
 	_Check_return_ _Success_(return != 0)
@@ -183,7 +183,7 @@ namespace NtExt {
 		memcpy64(&_peb64, GetPeb64(), sizeof(PEB64));
 
 		HANDLE hModule = GetModuleHandle(nullptr);
-		IMAGE_NT_HEADERS* pInh = (IMAGE_NT_HEADERS*) ((BYTE*) hModule + ((IMAGE_DOS_HEADER*) hModule)->e_lfanew);
+		auto* pInh = (IMAGE_NT_HEADERS*) ((BYTE*) hModule + ((IMAGE_DOS_HEADER*) hModule)->e_lfanew);
 		WORD& subSystem = pInh->OptionalHeader.Subsystem;
 
 		DWORD oldProctect = 0;
@@ -256,17 +256,17 @@ namespace NtExt {
 		DWORD pebAddr = GetPeb32();
 		if ( !pebAddr ) return 0;
 
-		PEB32* peb32 = (PEB32*) (SIZE_T) pebAddr;
-		PEB_LDR_DATA32* ldr = (PEB_LDR_DATA32*) (SIZE_T) peb32->Ldr;
+		auto* peb32 = (PEB32*) pebAddr;
+		auto ldr = (PEB_LDR_DATA32*) peb32->Ldr;
 		if ( !ldr ) return 0;
 
-		DWORD listHead = (DWORD) (SIZE_T) &ldr->InLoadOrderModuleList;
+		auto listHead = (SIZE_T) &ldr->InLoadOrderModuleList;
 		DWORD currentNode = ldr->InLoadOrderModuleList.Flink;
 
 		while ( currentNode != listHead && currentNode != 0 ) {
-			LDR_DATA_TABLE_ENTRY32* entry = (LDR_DATA_TABLE_ENTRY32*) (SIZE_T) currentNode;
+			auto* entry = (LDR_DATA_TABLE_ENTRY32*) currentNode;
 			if ( entry->DllBase != 0 && entry->BaseDllName.Buffer != 0 ) {
-				if ( _wcsicmp((wchar_t*) (SIZE_T) entry->BaseDllName.Buffer, moduleName) == 0 ) {
+				if ( _wcsicmp((wchar_t*) entry->BaseDllName.Buffer, moduleName) == 0 ) {
 					return entry->DllBase;
 				}
 			}
@@ -313,19 +313,19 @@ namespace NtExt {
 		DWORD dllBase = GetNtdll32();
 		if ( !dllBase ) return 0;
 
-		IMAGE_DOS_HEADER* dosHeader = (IMAGE_DOS_HEADER*) (SIZE_T) dllBase;
+		auto* dosHeader = (IMAGE_DOS_HEADER*) (SIZE_T) dllBase;
 		if ( dosHeader->e_magic != IMAGE_DOS_SIGNATURE ) return 0;
 
-		IMAGE_NT_HEADERS32* ntHeaders = (IMAGE_NT_HEADERS32*) (SIZE_T) (dllBase + dosHeader->e_lfanew);
+		auto ntHeaders = (IMAGE_NT_HEADERS32*) (SIZE_T) (dllBase + dosHeader->e_lfanew);
 		if ( ntHeaders->Signature != IMAGE_NT_SIGNATURE ) return 0;
 
 		DWORD exportRva = ntHeaders->OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].VirtualAddress;
 		if ( !exportRva ) return 0;
 
-		IMAGE_EXPORT_DIRECTORY* exportDir = (IMAGE_EXPORT_DIRECTORY*) (SIZE_T) (dllBase + exportRva);
-		DWORD* nameTable = (DWORD*) (SIZE_T) (dllBase + exportDir->AddressOfNames);
+		auto exportDir = (IMAGE_EXPORT_DIRECTORY*) (SIZE_T) (dllBase + exportRva);
+		auto nameTable = (DWORD*) (SIZE_T) (dllBase + exportDir->AddressOfNames);
 		WORD* ordTable = (WORD*) (SIZE_T) (dllBase + exportDir->AddressOfNameOrdinals);
-		DWORD* funcTable = (DWORD*) (SIZE_T) (dllBase + exportDir->AddressOfFunctions);
+		auto funcTable = (DWORD*) (SIZE_T) (dllBase + exportDir->AddressOfFunctions);
 
 		for ( DWORD i = 0; i < exportDir->NumberOfNames; i++ ) {
 			char* funcName = (char*) (SIZE_T) (dllBase + nameTable[ i ]);
@@ -353,7 +353,7 @@ namespace NtExt {
 		MakeUTFStr < DWORD >(moduleName, buffer);
 
 		DWORD hResult32 = 0;
-		NTSTATUS status = ((NTSTATUS(NTAPI*)(DWORD, DWORD, DWORD, DWORD))(SIZE_T) pLdrLoadDll32)(NULL, NULL, (DWORD) (SIZE_T) buffer, (DWORD) (SIZE_T) &hResult32);
+		NTSTATUS status = ((NTSTATUS(NTAPI*)(DWORD, DWORD, DWORD, DWORD))(SIZE_T) pLdrLoadDll32)(0, 0, (DWORD) (SIZE_T) buffer, (DWORD) (SIZE_T) &hResult32);
 		if ( NT_SUCCESS(status) ) return hResult32;
 		return 0;
 	}

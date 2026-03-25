@@ -25,11 +25,11 @@ namespace NtExt {
 		}
 
 		protected:
-		virtual VOID onPrepareEnv(_Inout_ std::string* pShell) override {
+		VOID onPrepareEnv(_Inout_ std::string* pShell) override {
 			InjectPrepareEnv(pShell, _args);
 		}
 
-		virtual VOID onEmitOpcode(_Inout_ std::string* pShell) override {
+		VOID onEmitOpcode(_Inout_ std::string* pShell) override {
 			BYTE syscall_stub[] = {
 				0x49, 0x89, 0xCA,                                           // mov r10, rcx
 				0xB8, 0x00, 0x00, 0x00, 0x00,                               // mov eax, SSN

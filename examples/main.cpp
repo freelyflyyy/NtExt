@@ -16,7 +16,7 @@ int main() {
     DWORD64 pRtlGetVersion = Resolver.GetProcAddress64(ntdll64, "RtlGetVersion");
     alignas(8) BYTE osvi[ 300 ] = { 0 };
     *(DWORD*) osvi = 284;
-    NTSTATUS status = Call(pRtlGetVersion)((DWORD64) &osvi);
+    (void)Call(pRtlGetVersion)((DWORD64) &osvi);
     DWORD major = *(DWORD*) (osvi + 4);
     DWORD minor = *(DWORD*) (osvi + 8);
     DWORD build = *(DWORD*) (osvi + 12);
