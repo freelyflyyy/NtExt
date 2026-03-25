@@ -3,7 +3,11 @@
 
 namespace NtExt {
 	#ifdef _M_IX86
-
+	/**
+	 * @class Wow64Syscall
+	 * @brief Executes a 64-bit System Call (syscall) directly from a 32-bit process.
+	 * @details Bypasses WoW64 redirection layers and user-mode hooks by executing a raw x64 syscall instruction.
+	 */
 	class Wow64Syscall : public Wow64Invoker {
 		private:
 		DWORD64 _sysCallContext;
@@ -13,6 +17,12 @@ namespace NtExt {
 		Wow64Syscall(_In_ DWORD64 sysCallContext) : _sysCallContext(sysCallContext) {
 		}
 
+		/**
+		 * @brief Triggers the 64-bit syscall with variable arguments.
+		 * @tparam Args Variadic template arguments.
+		 * @param args The arguments for the syscall.
+		 * @return The 64-bit return value from the kernel.
+		 */
 		template<typename... Args>
 		_Check_return_ 
 			DWORD64 operator()(Args... args) {

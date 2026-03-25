@@ -3,6 +3,11 @@
 
 namespace NtExt {
     #ifdef _WIN64
+    /**
+     * @class X64Syscall
+     * @brief Executes a direct System Call (syscall) into the Windows kernel, bypassing user-mode API hooks.
+     * @details Assembles a custom syscall stub using a provided System Service Number (SSN) and a valid syscall instruction address.
+     */
     class X64Syscall : public X64Invoker {
         private:
         DWORD64 _sysCallContext;
@@ -11,6 +16,12 @@ namespace NtExt {
         public:
         X64Syscall(_In_ DWORD64 sysCallContext) : _sysCallContext(sysCallContext) {}
 
+        /**
+         * @brief Overloaded call operator to trigger the kernel syscall with variable arguments.
+         * @tparam Args Variadic template arguments representing the parameters for the syscall.
+         * @param args The arguments to be passed into the kernel.
+         * @return The 64-bit NTSTATUS code or return value from the kernel.
+         */
         template<typename... Args>
         _Check_return_
             DWORD64 operator()(Args... args) {

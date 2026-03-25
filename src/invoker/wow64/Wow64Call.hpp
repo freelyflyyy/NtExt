@@ -4,6 +4,11 @@
 namespace NtExt {
 
     #ifdef _M_IX86
+    /**
+     * @class Wow64Call
+     * @brief Dynamically executes a 64-bit function from within a 32-bit process via Heaven's Gate.
+     * @details Transitions the CPU to 64-bit mode, sets up the x64 calling convention, and executes the target 64-bit address.
+     */
     class Wow64Call : public Wow64Invoker {
         private:
         DWORD64 _funcAddr;
@@ -12,6 +17,12 @@ namespace NtExt {
         public:
         Wow64Call(_In_ DWORD64 funcAddr) : _funcAddr(funcAddr) {}
 
+        /**
+         * @brief Triggers the 64-bit function execution with variable arguments.
+         * @tparam Args Variadic template arguments.
+         * @param args The arguments to pass to the 64-bit function.
+         * @return The 64-bit return value.
+         */
         template<typename... Args>
         _Check_return_
             DWORD64 operator()(Args... args) {

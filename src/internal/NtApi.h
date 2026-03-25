@@ -5,8 +5,6 @@
  * @brief Template definitions for Windows kernel structures
  *        (PEB, TEB, UNICODE/ANSI STRING) compatible with both
  *        32-bit and 64-bit builds.
- * @author freelyfly
- *
  * @details
  * This header provides templated representations of common Windows
  * internal structures to facilitate cross-architecture code reuse.

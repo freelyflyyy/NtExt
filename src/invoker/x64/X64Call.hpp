@@ -3,6 +3,11 @@
 
 namespace NtExt {
 	#ifdef _WIN64
+	/**
+	 * @class X64Call
+	 * @brief Dynamically executes a standard function at a specified 64-bit memory address.
+	 * @details Uses the x64 calling convention to pass arguments and jump to the target address.
+	 */
 	class X64Call : public X64Invoker {
 		private:
 		DWORD64 _funcAddr;
@@ -11,6 +16,12 @@ namespace NtExt {
 		public:
 		X64Call(_In_ DWORD64 funcAddr) : _funcAddr(funcAddr) {}
 
+		/**
+		 * @brief Overloaded call operator that accepts a variable number of arguments, formats them, and triggers execution.
+		 * @tparam Args Variadic template arguments representing the parameters for the target function.
+		 * @param args The arguments to be passed to the function (up to 16 arguments).
+		 * @return The 64-bit return value from the executed function.
+		 */
 		template<typename... Args>
 		_Check_return_ 
 			DWORD64 operator()(Args... args) {

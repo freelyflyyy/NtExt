@@ -1,6 +1,4 @@
-set(HEADER_MAIN
-        "NtExt.hpp"
-        "Config.h")
+set(HEADER_MAIN "NtExt.hpp")
 
 set(HEADER_INTERNAL 
     "internal/NtApi.h"
