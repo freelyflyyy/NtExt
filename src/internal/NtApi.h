@@ -309,6 +309,20 @@ namespace NtExt {
         ULONG DefaultThreadpoolThreadMaximum;
     };
 
+    template <class T>
+    // NOLINTNEXTLINE
+    struct _MEMORY_BASIC_INFORMATION_T {
+        T BaseAddress;
+        T AllocationBase;
+        DWORD AllocationProtect;
+        T RegionSize;
+        DWORD State;
+        DWORD Protect;
+        DWORD Type;
+    };
+
+    typedef _MEMORY_BASIC_INFORMATION_T<DWORD> MEMORY_BASIC_INFORMATION32;
+    typedef _MEMORY_BASIC_INFORMATION_T<DWORD64> MEMORY_BASIC_INFORMATION64;
 
     typedef _LDR_DATA_TABLE_ENTRY_T<DWORD> LDR_DATA_TABLE_ENTRY32;
     typedef _LDR_DATA_TABLE_ENTRY_T<DWORD64> LDR_DATA_TABLE_ENTRY64;
