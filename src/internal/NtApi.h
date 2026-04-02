@@ -321,6 +321,25 @@ namespace NtExt {
         DWORD Type;
     };
 
+    template <typename T>
+    struct _THREAD_BASIC_INFORMATION_T {
+        NTSTATUS ExitStatus;
+        T TebBaseAddress;   
+        struct {
+            T UniqueProcess;
+            T UniqueThread; 
+        } ClientId;         
+        T AffinityMask;     
+        LONG Priority;      
+        LONG BasePriority;  
+    };
+
+    typedef _THREAD_BASIC_INFORMATION_T<DWORD64> THREAD_BASIC_INFORMATION64;
+    typedef THREAD_BASIC_INFORMATION64* PTHREAD_BASIC_INFORMATION64;
+
+    typedef _THREAD_BASIC_INFORMATION_T<DWORD> THREAD_BASIC_INFORMATION32;
+    typedef THREAD_BASIC_INFORMATION32* PTHREAD_BASIC_INFORMATION32;
+
     typedef _MEMORY_BASIC_INFORMATION_T<DWORD> MEMORY_BASIC_INFORMATION32;
     typedef _MEMORY_BASIC_INFORMATION_T<DWORD64> MEMORY_BASIC_INFORMATION64;
 
