@@ -2,6 +2,7 @@
 #include "../pch/stdafx.h"
 
 /**
+ * @file NtStructs.h
  * @brief Template definitions for Windows kernel structures
  *        (PEB, TEB, UNICODE/ANSI STRING) compatible with both
  *        32-bit and 64-bit builds.
@@ -28,7 +29,7 @@ namespace NtExt {
 
     template <typename T>
     // NOLINTNEXTLINE
-    struct _PROCESS_BASIC_INFORMATION_T {
+    struct alignas(8) _PROCESS_BASIC_INFORMATION_T {
         NTSTATUS ExitStatus;
         UINT32 Reserved0;
         T PebBaseAddress;
@@ -44,14 +45,14 @@ namespace NtExt {
 
     template <class T>
     // NOLINTNEXTLINE
-    struct _LIST_ENTRY_T {
+    struct alignas(8) _LIST_ENTRY_T {
         T Flink;
         T Blink;
     };
 
     template <class T>
     // NOLINTNEXTLINE
-    struct _STRING_T {
+    struct alignas(8) _STRING_T {
         union {
             struct {
                 WORD Length;
@@ -76,7 +77,7 @@ namespace NtExt {
 
     template <class T>
     // NOLINTNEXTLINE
-    struct _NT_TIB_T {
+    struct alignas(8) _NT_TIB_T {
         T ExceptionList;
         T StackBase;
         T StackLimit;
@@ -88,14 +89,14 @@ namespace NtExt {
 
     template <class T>
     // NOLINTNEXTLINE
-    struct _CLIENT_ID_T {
+    struct alignas(8) _CLIENT_ID_T {
         T UniqueProcess;
         T UniqueThread;
     };
 
     template <class T>
     // NOLINTNEXTLINE
-    struct _TEB_T_ {
+    struct alignas(8) _TEB_T_ {
         _NT_TIB_T<T> NtTib;
         T EnvironmentPointer;
         _CLIENT_ID_T<T> ClientId;
@@ -112,10 +113,12 @@ namespace NtExt {
 
     typedef _TEB_T_<DWORD> TEB32;
     typedef _TEB_T_<DWORD64> TEB64;
+    typedef _NT_TIB_T<DWORD> NT_TIB32;
+    typedef _NT_TIB_T<DWORD64> NT_TIB64;
 
     template <class T>
     // NOLINTNEXTLINE
-    struct _LDR_DATA_TABLE_ENTRY_T {
+    struct alignas(8) _LDR_DATA_TABLE_ENTRY_T {
         _LIST_ENTRY_T<T> InLoadOrderLinks;
         _LIST_ENTRY_T<T> InMemoryOrderLinks;
         _LIST_ENTRY_T<T> InInitializationOrderLinks;
@@ -162,7 +165,7 @@ namespace NtExt {
 
     template <class T>
     // NOLINTNEXTLINE
-    struct _PEB_LDR_DATA_T {
+    struct alignas(8) _PEB_LDR_DATA_T {
         DWORD Length;
         DWORD Initialized;
         T SsHandle;
@@ -179,7 +182,7 @@ namespace NtExt {
 
     template <class T, class NGF, int A>
     // NOLINTNEXTLINE
-    struct _PEB_T {
+    struct alignas(8) _PEB_T {
         union {
             struct {
                 BYTE InheritedAddressSpace;
@@ -274,14 +277,14 @@ namespace NtExt {
 
     template <class T>
     // NOLINTNEXTLINE
-    struct _CURDIR_T {
+    struct alignas(8) _CURDIR_T {
         _STRING_T<T> DosPath;
         T Handle;
     };
 
     template <class T>
     // NOLINTNEXTLINE
-    struct _RTL_DRIVE_LETTER_CURDIR_T {
+    struct alignas(8) _RTL_DRIVE_LETTER_CURDIR_T {
         WORD Flags;
         WORD Length;
         ULONG TimeStamp;
@@ -290,7 +293,7 @@ namespace NtExt {
 
     template <class T>
     // NOLINTNEXTLINE
-    struct _RTL_USER_PROCESS_PARAMETERS_T {
+    struct alignas(8) _RTL_USER_PROCESS_PARAMETERS_T {
         ULONG MaximumLength;
         ULONG Length;
         ULONG Flags;
@@ -336,7 +339,7 @@ namespace NtExt {
 
     template <class T>
     // NOLINTNEXTLINE
-    struct _MEMORY_BASIC_INFORMATION_T {
+    struct alignas(8) _MEMORY_BASIC_INFORMATION_T {
         T BaseAddress;
         T AllocationBase;
         DWORD AllocationProtect;
@@ -350,7 +353,7 @@ namespace NtExt {
     typedef _MEMORY_BASIC_INFORMATION_T<DWORD64> MEMORY_BASIC_INFORMATION64;
 
     template <typename T>
-    struct _THREAD_BASIC_INFORMATION_T {
+    struct alignas(8) _THREAD_BASIC_INFORMATION_T {
         NTSTATUS ExitStatus;
         T TebBaseAddress;
         _CLIENT_ID_T<T> ClientId;
@@ -365,7 +368,7 @@ namespace NtExt {
     typedef THREAD_BASIC_INFORMATION64* PTHREAD_BASIC_INFORMATION64;
 
     template <typename T>
-    struct _SYSTEM_PROCESS_INFORMATION_T {
+    struct alignas(8) _SYSTEM_PROCESS_INFORMATION_T {
         ULONG NextEntryOffset;
         ULONG NumberOfThreads;
         LARGE_INTEGER WorkingSetPrivateSize;

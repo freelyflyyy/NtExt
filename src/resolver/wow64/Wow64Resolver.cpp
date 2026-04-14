@@ -1,16 +1,13 @@
 #include "Wow64Resolver.hpp"
-#include "../../internal/NtApi.h"
+#include "../../internal/NtStructs.h"
 #include "../../invoker/NtExtInvokers.hpp"
 
 namespace NtExt {
 	#ifdef _M_IX86
 	DWORD64 NTAPI Wow64Resolver::GetProcAddress64Impl(_In_ DWORD64 hMod, _In_z_ const char* funcName) {
 		if ( !hMod || !funcName ) return 0;
-		static DWORD64 ldrGetProcedureAddress = 0;
-		if ( !ldrGetProcedureAddress ) {
-			ldrGetProcedureAddress = GetLdrGetProcedureAddress64();
-			if ( ldrGetProcedureAddress == 0 ) return 0;
-		}
+		DWORD64 ldrGetProcedureAddress = GetLdrGetProcedureAddress64();
+		if ( ldrGetProcedureAddress == 0 ) return 0;
 
 		BYTE fName[ 64 ] = { 0 };
 		MakeANSIStr<DWORD64>(funcName, fName);
@@ -229,10 +226,7 @@ VOID NTAPI Wow64Resolver::memcpy64(_In_ DWORD64 dest, _In_reads_bytes_(sz) const
 		DWORD64 hMod = GetModuleBase64(moduleName);
 		if ( hMod != 0 ) return hMod;
 
-		static DWORD64 pLoadLibraryW = 0;
-		if ( !pLoadLibraryW ) {
-			pLoadLibraryW = GetProcAddress64Impl(GetKernel64(), "LoadLibraryW");
-		}
+		DWORD64 pLoadLibraryW = GetProcAddress64(GetKernel64(), "LoadLibraryW");
 		if ( !pLoadLibraryW ) return 0;
 
 		return Call(pLoadLibraryW)((DWORD64) moduleName);
@@ -280,14 +274,14 @@ VOID NTAPI Wow64Resolver::memcpy64(_In_ DWORD64 dest, _In_reads_bytes_(sz) const
 	_Check_return_ _Success_(return != 0)
 		DWORD NTAPI Wow64Resolver::GetTeb32() {
 		DWORD _teb32 = 0;
-		_teb32 = __readfsdword(FIELD_OFFSET(NT_TIB, Self));
+		_teb32 = __readfsdword(static_cast<DWORD>(offsetof(NT_TIB32, Self)));
 		return _teb32;
 	}
 
 	_Check_return_ _Success_(return != 0)
 		DWORD NTAPI Wow64Resolver::GetPeb32() {
 		DWORD _peb32 = 0;
-		_peb32 = __readfsdword(FIELD_OFFSET(TEB, ProcessEnvironmentBlock));
+		_peb32 = __readfsdword(static_cast<DWORD>(offsetof(TEB32, ProcessEnvironmentBlock)));
 		return _peb32;
 	}
 
@@ -345,10 +339,7 @@ VOID NTAPI Wow64Resolver::memcpy64(_In_ DWORD64 dest, _In_reads_bytes_(sz) const
 		DWORD hMod = GetModuleBase32(moduleName);
 		if ( hMod != 0 ) return hMod;
 
-		static DWORD pLdrLoadDll32 = 0;
-		if ( !pLdrLoadDll32 ) {
-			pLdrLoadDll32 = GetProcAddress32(GetNtdll32(), "LdrLoadDll");
-		}
+		DWORD pLdrLoadDll32 = GetProcAddress32(GetNtdll32(), "LdrLoadDll");
 		if ( !pLdrLoadDll32 ) return 0;
 
 		BYTE buffer[ 64 ] = { 0 };

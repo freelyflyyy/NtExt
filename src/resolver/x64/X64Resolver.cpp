@@ -1,5 +1,5 @@
 #include "X64Resolver.hpp"
-#include "../../internal/NtApi.h"
+#include "../../internal/NtStructs.h"
 #include "../../invoker/NtExtInvokers.hpp"
 
 namespace NtExt {
@@ -80,12 +80,12 @@ namespace NtExt {
 
 	_Check_return_ _Success_(return != 0)
 		DWORD64 NTAPI X64Resolver::GetTeb64() {
-		return __readgsqword(FIELD_OFFSET(NT_TIB, Self));
+		return __readgsqword(offsetof(NT_TIB64, Self));
 	}
 
 	_Check_return_ _Success_(return != 0)
 		DWORD64 NTAPI X64Resolver::GetPeb64() {
-		return __readgsqword(FIELD_OFFSET(TEB, ProcessEnvironmentBlock));
+		return __readgsqword(offsetof(TEB64, ProcessEnvironmentBlock));
 	}
 
 	_Check_return_ _Success_(return != 0)
@@ -113,10 +113,7 @@ namespace NtExt {
 		DWORD64 hMod = GetModuleBase64(moduleName);
 		if ( hMod != 0 ) return hMod;
 
-		static DWORD64 pLdrLoadDll = 0;
-		if ( !pLdrLoadDll ) {
-			pLdrLoadDll = GetProcAddress64(GetNtdll64(), "LdrLoadDll");
-		}
+		DWORD64 pLdrLoadDll = GetProcAddress64(GetNtdll64(), "LdrLoadDll");
 		if ( !pLdrLoadDll ) return 0;
 
 		BYTE buffer[ 64 ] = { 0 };
