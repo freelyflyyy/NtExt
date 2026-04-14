@@ -42,21 +42,24 @@ namespace NtExt {
 		protected:
 		Wow64Invoker() : InvokerBase() {}
 
-		static VOID InjectPrepareEnv(_Inout_ std::string* pShell, _In_reads_(16) const DWORD64* pArgs) {
-			BYTE _prepare_env_temp[ sizeof(NtExt::Internal::prepare_env) ];
-			memcpy(_prepare_env_temp, NtExt::Internal::prepare_env, sizeof(NtExt::Internal::prepare_env));
-			*(DWORD64*) (_prepare_env_temp + 2) = (DWORD64) pArgs;
-			*(DWORD64*) (_prepare_env_temp + 12) = (DWORD64) 16;
-			pShell->append((char*) _prepare_env_temp, sizeof(_prepare_env_temp));
+		static VOID AppendMovImm64(_Inout_ std::string* pShell, _In_ BYTE rex, _In_ BYTE opcode, _In_ DWORD64 value) {
+			if ( !pShell ) return;
+			BYTE shellcode[] = {
+				rex, opcode, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+			};
+			*(DWORD64*) (shellcode + 2) = value;
+			pShell->append((char*) shellcode, sizeof(shellcode));
 		}
 
 		VOID onBackupEnv(_Inout_ std::string* pShell) override {
+			if ( !pShell ) return;
 			pShell->append((char*) Internal::backup_env_x86, sizeof(Internal::backup_env_x86));
 			pShell->append((char*) Internal::jmp_x64, sizeof(Internal::jmp_x64));
 			pShell->append((char*) NtExt::Internal::backup_env, sizeof(NtExt::Internal::backup_env));
 		}
 
 		VOID onRestoreEnv(_Inout_ std::string* pShell) override {
+			if ( !pShell ) return;
 			pShell->append((char*) NtExt::Internal::restore_env, sizeof(NtExt::Internal::restore_env) - 1);
 			pShell->append((char*) Internal::jmp_x86, sizeof(Internal::jmp_x86));
 			pShell->append((char*) Internal::restore_env_x86, sizeof(Internal::restore_env_x86));

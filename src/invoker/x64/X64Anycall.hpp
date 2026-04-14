@@ -28,6 +28,7 @@ namespace NtExt {
 
         protected:
         VOID onEmitOpcode(_Inout_ std::string* pShell) override {
+            if ( !pShell ) return;
             pShell->append(_opcode);
         }
     };
