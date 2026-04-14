@@ -4,6 +4,12 @@
 namespace NtExt {
 
     #ifdef _M_IX86
+    /**
+     * @class Wow64Resolver
+     * @brief Resolves 32-bit and 64-bit loader metadata from a WoW64 process.
+     * @details Provides Heaven's Gate based access to the native 64-bit address space while also exposing
+     *          helpers for the 32-bit WoW64 layer.
+     */
     class Wow64Resolver : public ResolverBase {
         public:
         /**
@@ -15,6 +21,9 @@ namespace NtExt {
             return instance;
         }
 
+        /**
+         * @brief Releases the singleton resolver instance.
+         */
         ~Wow64Resolver() override = default;
 
         /**
@@ -99,7 +108,7 @@ namespace NtExt {
          * @param[in] src The source buffer in the 32-bit address space.
          * @param[in] sz The number of bytes to copy.
          */
-        VOID NTAPI memcpy64(_In_ DWORD64 dest, _In_reads_bytes_(sz) VOID* src, _In_ SIZE_T sz);
+        VOID NTAPI memcpy64(_In_ DWORD64 dest, _In_reads_bytes_(sz) const VOID* src, _In_ SIZE_T sz);
 
         /**
          * @brief Retrieves the 32-bit base memory address of a loaded module.
@@ -227,6 +236,9 @@ namespace NtExt {
         DWORD NTAPI GetProcAddressImpl(_In_ DWORD hMod, _In_z_ const char* funcName);
 
         private:
+        /**
+         * @brief Initializes the WoW64 resolver singleton.
+         */
         Wow64Resolver() = default;
 
         std::unordered_map<std::string, DWORD> _cache32;

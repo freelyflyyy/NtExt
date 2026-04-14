@@ -3,8 +3,18 @@
 
 namespace NtExt {
 
+    /**
+     * @class ResolverBase
+     * @brief Common resolver interface for locating 64-bit modules, exports, and syscall metadata.
+     * @details Derived classes provide architecture-specific implementations for native x64 or WoW64
+     *          environments. The base class also offers cached export lookup helpers and string-packing
+     *          utilities for ANSI_STRING and UNICODE_STRING compatible layouts.
+     */
     class ResolverBase {
         public:
+        /**
+         * @brief Releases the resolver instance.
+         */
         virtual ~ResolverBase() = default;
 
         ResolverBase(const ResolverBase&) = delete;
@@ -89,7 +99,7 @@ namespace NtExt {
          * @param[out] outUnicodeStr The pre-allocated output buffer for the resulting structure.
          */
         template<typename T>
-        VOID MakeUTFStr(_In_z_ LPCSTR lpString, _Out_ LPBYTE outUnicodeStr) {
+        VOID MakeUTFStr(_In_z_ LPCSTR lpString, _Out_writes_bytes_(sizeof(T) + (MultiByteToWideChar(CP_ACP, 0, lpString, -1, NULL, 0) - 1) * sizeof(WCHAR) + 16) LPBYTE outUnicodeStr) {
             int len = MultiByteToWideChar(CP_ACP, 0, lpString, -1, NULL, 0);
             std::wstring wStr(len, L'\0');
             MultiByteToWideChar(CP_ACP, 0, lpString, -1, wStr.data(), len);
@@ -114,7 +124,7 @@ namespace NtExt {
          * @param[out] outAnsiStr The pre-allocated output buffer for the resulting structure.
          */
         template<typename T>
-        VOID MakeANSIStr(_In_z_ LPCWSTR lpString, _Out_ LPBYTE outAnsiStr) {
+        VOID MakeANSIStr(_In_z_ LPCWSTR lpString, _Out_writes_bytes_(sizeof(T) + (WideCharToMultiByte(CP_ACP, 0, lpString, -1, NULL, 0, NULL, NULL) - 1) + 16) LPBYTE outAnsiStr) {
             int len = WideCharToMultiByte(CP_ACP, 0, lpString, -1, NULL, 0, NULL, NULL);
             std::string aStr(len, '\0');
             WideCharToMultiByte(CP_ACP, 0, lpString, -1, aStr.data(), len, NULL, NULL);
@@ -178,12 +188,34 @@ namespace NtExt {
         }
 
         private:
+        /**
+         * @brief Architecture-specific export resolver implementation.
+         * @param[in] hMod The base address of the target module.
+         * @param[in] funcName The null-terminated exported symbol name.
+         * @return The resolved 64-bit export address, or `0` on failure.
+         */
         virtual DWORD64 NTAPI GetProcAddress64Impl(_In_ DWORD64 hMod, _In_z_ const char* funcName) = 0;
 
-        VOID NTAPI MakeUTFStrImpl(_In_z_ LPCWSTR lpString, _Out_ LPBYTE outBuffer, _In_ SIZE_T pointerSize);
-        VOID NTAPI MakeANSIStrImpl(_In_z_ LPCSTR lpString, _Out_ LPBYTE outBuffer, _In_ SIZE_T pointerSize);
+        /**
+         * @brief Packs a wide string into a UNICODE_STRING-compatible buffer layout.
+         * @param[in] lpString The source wide string.
+         * @param[out] outBuffer Receives the packed structure header and string payload.
+         * @param[in] pointerSize The target pointer width in bytes.
+         */
+        VOID NTAPI MakeUTFStrImpl(_In_z_ LPCWSTR lpString, _Out_writes_bytes_(pointerSize + wcslen(lpString) * sizeof(WCHAR) + 16) LPBYTE outBuffer, _In_ SIZE_T pointerSize);
+
+        /**
+         * @brief Packs an ANSI string into an ANSI_STRING-compatible buffer layout.
+         * @param[in] lpString The source ANSI string.
+         * @param[out] outBuffer Receives the packed structure header and string payload.
+         * @param[in] pointerSize The target pointer width in bytes.
+         */
+        VOID NTAPI MakeANSIStrImpl(_In_z_ LPCSTR lpString, _Out_writes_bytes_(pointerSize + strlen(lpString) + 16) LPBYTE outBuffer, _In_ SIZE_T pointerSize);
 
         protected:
+        /**
+         * @brief Initializes the common resolver state.
+         */
         ResolverBase() = default;
 
         std::unordered_map<std::string, DWORD64> _cache;

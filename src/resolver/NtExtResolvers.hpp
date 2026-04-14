@@ -10,10 +10,16 @@
 
 namespace NtExt {
     #ifdef _WIN64
+    /**
+     * @brief Process-wide native x64 resolver singleton.
+     */
     inline X64Resolver& Resolver = X64Resolver::GetInstance();
     #endif
 
     #ifdef _M_IX86
+    /**
+     * @brief Process-wide WoW64 resolver singleton.
+     */
     inline Wow64Resolver& Resolver = Wow64Resolver::GetInstance();
     #endif
 }

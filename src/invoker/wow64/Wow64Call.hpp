@@ -8,9 +8,13 @@ namespace NtExt {
         private:
         DWORD64 _funcAddr;
         DWORD64 _args[ 16 ] = { 0 };
-        DWORD64 _argCount = 0;
+		DWORD64 _argCount = 0;
 
         public:
+        /**
+         * @brief Binds a 64-bit function address for later invocation from a WoW64 process.
+         * @param[in] funcAddr The absolute 64-bit target function address.
+         */
         Wow64Call(_In_ DWORD64 funcAddr) : _funcAddr(funcAddr) {}
 
         template<typename... Args>
@@ -27,6 +31,10 @@ namespace NtExt {
         }
 
         protected:
+        /**
+         * @brief Encodes argument setup according to the x64 Windows calling convention.
+         * @param[in,out] pShell Receives the generated machine code.
+         */
         VOID onPrepareEnv(_Inout_ std::string* pShell) override {
             if ( !pShell ) return;
 
@@ -51,6 +59,10 @@ namespace NtExt {
             pShell->append((char*) shadow_space, sizeof(shadow_space));
         }
 
+        /**
+         * @brief Emits the indirect `call` stub for the bound 64-bit target.
+         * @param[in,out] pShell Receives the generated machine code.
+         */
         VOID onEmitOpcode(_Inout_ std::string* pShell) override {
             if ( !pShell ) return;
             BYTE call_stub[] = {

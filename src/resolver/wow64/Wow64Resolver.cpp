@@ -139,7 +139,7 @@ namespace NtExt {
 
 	#pragma warning(push)
 	#pragma warning(disable: 6101) 
-	VOID NTAPI Wow64Resolver::memcpy64(_In_ DWORD64 dest, _In_reads_bytes_(sz) VOID* src, _In_ SIZE_T sz) {
+VOID NTAPI Wow64Resolver::memcpy64(_In_ DWORD64 dest, _In_reads_bytes_(sz) const VOID* src, _In_ SIZE_T sz) {
 		if ( (0 == dest) || (nullptr == src) || (0 == sz) ) return;
 
 		BYTE shellcode[] = {

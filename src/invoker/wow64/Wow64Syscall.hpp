@@ -10,6 +10,10 @@ namespace NtExt {
 		DWORD64 _argCount = 0;
 
 		public:
+		/**
+		 * @brief Binds a pre-resolved syscall context for later invocation from WoW64.
+		 * @param[in] sysCallContext High 16 bits store the SSN and low 48 bits store the syscall stub address.
+		 */
 		Wow64Syscall(_In_ DWORD64 sysCallContext) : _sysCallContext(sysCallContext) {
 		}
 
@@ -27,6 +31,10 @@ namespace NtExt {
 		}
 
 		protected:
+		/**
+		 * @brief Encodes syscall arguments according to the x64 Windows calling convention.
+		 * @param[in,out] pShell Receives the generated machine code.
+		 */
 		VOID onPrepareEnv(_Inout_ std::string* pShell) override {
 			if ( !pShell ) return;
 
@@ -51,6 +59,10 @@ namespace NtExt {
 			pShell->append((char*) shadow_space, sizeof(shadow_space));
 		}
 
+		/**
+		 * @brief Emits the raw syscall trampoline using the stored syscall context.
+		 * @param[in,out] pShell Receives the generated machine code.
+		 */
 		VOID onEmitOpcode(_Inout_ std::string* pShell) override {
 			if ( !pShell ) return;
 			BYTE syscall_stub[] = {

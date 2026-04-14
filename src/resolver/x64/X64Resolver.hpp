@@ -3,6 +3,12 @@
 
 namespace NtExt {
     #ifdef _WIN64
+    /**
+     * @class X64Resolver
+     * @brief Resolver implementation for native 64-bit processes.
+     * @details Resolves module, export, and syscall metadata directly from the native process environment
+     *          without any WoW64 mode transitions.
+     */
     class X64Resolver : public ResolverBase {
        public:
        /**
@@ -14,6 +20,9 @@ namespace NtExt {
           return instance;
        }
 
+       /**
+        * @brief Releases the singleton resolver instance.
+        */
        ~X64Resolver() override = default;
 
        /**
@@ -90,6 +99,9 @@ namespace NtExt {
           DWORD64 NTAPI GetProcAddress64Impl(_In_ DWORD64 hMod, _In_z_ const char* funcName) override;
 
        private:
+       /**
+        * @brief Initializes the native x64 resolver singleton.
+        */
        X64Resolver() = default;
     };
     #endif

@@ -23,4 +23,7 @@
 #endif
 
 namespace NtExt {
+    /**
+     * @brief Namespace root for NtExt public APIs.
+     */
 }
