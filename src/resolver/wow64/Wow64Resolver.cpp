@@ -120,6 +120,7 @@ namespace NtExt {
 			0xBF, 0x00, 0x00, 0x00, 0x00,                               // mov edi, dest
 			0x48, 0xBE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // mov rsi, src
 			0xB9, 0x00, 0x00, 0x00, 0x00,                               // mov ecx, sz
+			0xFC,                                                       // cld
 			0x89, 0xC8,                                                 // mov eax, ecx
 			0xC1, 0xE9, 0x02,                                           // shr ecx, 2
 			0xF3, 0xA5,                                                 // rep movsd
@@ -145,6 +146,7 @@ namespace NtExt {
 			0x48, 0xBF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // mov rdi, dest
 			0xBE, 0x00, 0x00, 0x00, 0x00,                               // mov esi, src
 			0xB9, 0x00, 0x00, 0x00, 0x00,                               // mov ecx, sz
+			0xFC,                                                       // cld
 			0x89, 0xC8,                                                 // mov eax, ecx
 			0xC1, 0xE9, 0x02,                                           // shr ecx, 2  
 			0xF3, 0xA5,                                                 // rep movsd   

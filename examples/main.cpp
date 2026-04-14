@@ -16,7 +16,7 @@ int main() {
     DWORD64 pRtlGetVersion = Resolver.GetProcAddress64(ntdll64, "RtlGetVersion");
     alignas(8) BYTE osvi[ 300 ] = { 0 };
     *(DWORD*) osvi = 284;
-    (void)Call(pRtlGetVersion)((DWORD64) &osvi);
+    (void) Call(pRtlGetVersion)((DWORD64) &osvi);
     DWORD major = *(DWORD*) (osvi + 4);
     DWORD minor = *(DWORD*) (osvi + 8);
     DWORD build = *(DWORD*) (osvi + 12);
@@ -25,7 +25,7 @@ int main() {
     //direct syscall Nt function
     DWORD64 syscall = Resolver.GetSyscallNumber64(ntdll64, "NtReadVirtualMemory");
     WORD dosMagic = 0;
-    (void)Syscall((DWORD64) syscall)(
+    (void) Syscall((DWORD64) syscall)(
         (DWORD64) -1,
         (DWORD64) ntdll64,
         (DWORD64) &dosMagic,

@@ -64,6 +64,16 @@ namespace NtExt {
         T Buffer;
     };
 
+    typedef _STRING_T<DWORD> UNICODE_STRING32;
+    typedef _STRING_T<DWORD64> UNICODE_STRING64;
+    typedef UNICODE_STRING32* PUNICODE_STRING32;
+    typedef UNICODE_STRING64* PUNICODE_STRING64;
+
+    typedef _STRING_T<DWORD> ANSI_STRING32;
+    typedef _STRING_T<DWORD64> ANSI_STRING64;
+    typedef ANSI_STRING32* PANSI_STRING32;
+    typedef ANSI_STRING64* PANSI_STRING64;
+
     template <class T>
     // NOLINTNEXTLINE
     struct _NT_TIB_T {
@@ -97,8 +107,11 @@ namespace NtExt {
         T CsrClientThread;
         T Win32ThreadInfo;
         DWORD User32Reserved[26];
-        //rest of the structure is not defined for now, as it is not needed
+        // rest of the structure is not defined for now, as it is not needed
     };
+
+    typedef _TEB_T_<DWORD> TEB32;
+    typedef _TEB_T_<DWORD64> TEB64;
 
     template <class T>
     // NOLINTNEXTLINE
@@ -144,6 +157,9 @@ namespace NtExt {
         _LARGE_INTEGER LoadTime;
     };
 
+    typedef _LDR_DATA_TABLE_ENTRY_T<DWORD> LDR_DATA_TABLE_ENTRY32;
+    typedef _LDR_DATA_TABLE_ENTRY_T<DWORD64> LDR_DATA_TABLE_ENTRY64;
+
     template <class T>
     // NOLINTNEXTLINE
     struct _PEB_LDR_DATA_T {
@@ -157,6 +173,9 @@ namespace NtExt {
         DWORD ShutdownInProgress;
         T ShutdownThreadId;
     };
+
+    typedef _PEB_LDR_DATA_T<DWORD> PEB_LDR_DATA32;
+    typedef _PEB_LDR_DATA_T<DWORD64> PEB_LDR_DATA64;
 
     template <class T, class NGF, int A>
     // NOLINTNEXTLINE
@@ -250,6 +269,9 @@ namespace NtExt {
         T TracingFlags;
     };
 
+    typedef _PEB_T<DWORD, DWORD64, 34> PEB32;
+    typedef _PEB_T<DWORD64, DWORD, 30> PEB64;
+
     template <class T>
     // NOLINTNEXTLINE
     struct _CURDIR_T {
@@ -309,6 +331,9 @@ namespace NtExt {
         ULONG DefaultThreadpoolThreadMaximum;
     };
 
+    typedef _RTL_USER_PROCESS_PARAMETERS_T<ULONG> RTL_USER_PROCESS_PARAMETERS32;
+    typedef _RTL_USER_PROCESS_PARAMETERS_T<ULONGLONG> RTL_USER_PROCESS_PARAMETERS64;
+
     template <class T>
     // NOLINTNEXTLINE
     struct _MEMORY_BASIC_INFORMATION_T {
@@ -321,51 +346,64 @@ namespace NtExt {
         DWORD Type;
     };
 
-    template <typename T>
-    struct _THREAD_BASIC_INFORMATION_T {
-        NTSTATUS ExitStatus;
-        T TebBaseAddress;   
-        struct {
-            T UniqueProcess;
-            T UniqueThread; 
-        } ClientId;         
-        T AffinityMask;     
-        LONG Priority;      
-        LONG BasePriority;  
-    };
-
-    typedef _THREAD_BASIC_INFORMATION_T<DWORD64> THREAD_BASIC_INFORMATION64;
-    typedef THREAD_BASIC_INFORMATION64* PTHREAD_BASIC_INFORMATION64;
-
-    typedef _THREAD_BASIC_INFORMATION_T<DWORD> THREAD_BASIC_INFORMATION32;
-    typedef THREAD_BASIC_INFORMATION32* PTHREAD_BASIC_INFORMATION32;
-
     typedef _MEMORY_BASIC_INFORMATION_T<DWORD> MEMORY_BASIC_INFORMATION32;
     typedef _MEMORY_BASIC_INFORMATION_T<DWORD64> MEMORY_BASIC_INFORMATION64;
 
-    typedef _LDR_DATA_TABLE_ENTRY_T<DWORD> LDR_DATA_TABLE_ENTRY32;
-    typedef _LDR_DATA_TABLE_ENTRY_T<DWORD64> LDR_DATA_TABLE_ENTRY64;
+    template <typename T>
+    struct _THREAD_BASIC_INFORMATION_T {
+        NTSTATUS ExitStatus;
+        T TebBaseAddress;
+        _CLIENT_ID_T<T> ClientId;
+        T AffinityMask;
+        LONG Priority;
+        LONG BasePriority;
+    };
 
-    typedef _TEB_T_<DWORD> TEB32;
-    typedef _TEB_T_<DWORD64> TEB64;
+    typedef _THREAD_BASIC_INFORMATION_T<DWORD> THREAD_BASIC_INFORMATION32;
+    typedef THREAD_BASIC_INFORMATION32* PTHREAD_BASIC_INFORMATION32;
+    typedef _THREAD_BASIC_INFORMATION_T<DWORD64> THREAD_BASIC_INFORMATION64;
+    typedef THREAD_BASIC_INFORMATION64* PTHREAD_BASIC_INFORMATION64;
 
-    typedef _PEB_LDR_DATA_T<DWORD> PEB_LDR_DATA32;
-    typedef _PEB_LDR_DATA_T<DWORD64> PEB_LDR_DATA64;
+    template <typename T>
+    struct _SYSTEM_PROCESS_INFORMATION_T {
+        ULONG NextEntryOffset;
+        ULONG NumberOfThreads;
+        LARGE_INTEGER WorkingSetPrivateSize;
+        ULONG HardFaultCount;
+        ULONG NumberOfThreadsHighWatermark;
+        ULONGLONG CycleTime;
+        LARGE_INTEGER CreateTime;
+        LARGE_INTEGER UserTime;
+        LARGE_INTEGER KernelTime;
+        _STRING_T<T> ImageName;
+        KPRIORITY BasePriority;
+        T UniqueProcessId;
+        T InheritedFromUniqueProcessId;
+        ULONG HandleCount;
+        ULONG SessionId;
+        T UniqueProcessKey;
+        T PeakVirtualSize;
+        T VirtualSize;
+        ULONG PageFaultCount;
+        T PeakWorkingSetSize;
+        T WorkingSetSize;
+        T QuotaPeakPagedPoolUsage;
+        T QuotaPagedPoolUsage;
+        T QuotaPeakNonPagedPoolUsage;
+        T QuotaNonPagedPoolUsage;
+        T PagefileUsage;
+        T PeakPagefileUsage;
+        T PrivatePageCount;
+        LARGE_INTEGER ReadOperationCount;
+        LARGE_INTEGER WriteOperationCount;
+        LARGE_INTEGER OtherOperationCount;
+        LARGE_INTEGER ReadTransferCount;
+        LARGE_INTEGER WriteTransferCount;
+        LARGE_INTEGER OtherTransferCount;
+    };
 
-    typedef _PEB_T<DWORD, DWORD64, 34> PEB32;
-    typedef _PEB_T<DWORD64, DWORD, 30> PEB64;
-
-    typedef _STRING_T<DWORD> UNICODE_STRING32;
-    typedef _STRING_T<DWORD64> UNICODE_STRING64;
-    typedef UNICODE_STRING32* PUNICODE_STRING32;
-    typedef UNICODE_STRING64* PUNICODE_STRING64;
-
-
-    typedef _STRING_T<DWORD> ANSI_STRING32;
-    typedef _STRING_T<DWORD64> ANSI_STRING64;
-    typedef ANSI_STRING32* PANSI_STRING32;
-    typedef ANSI_STRING64* PANSI_STRING64;
-
-    typedef _RTL_USER_PROCESS_PARAMETERS_T<ULONG> RTL_USER_PROCESS_PARAMETERS32;
-    typedef _RTL_USER_PROCESS_PARAMETERS_T<ULONGLONG> RTL_USER_PROCESS_PARAMETERS64;
+    typedef _SYSTEM_PROCESS_INFORMATION_T<DWORD> SYSTEM_PROCESS_INFORMATION32;
+    typedef SYSTEM_PROCESS_INFORMATION32* PSYSTEM_PROCESS_INFORMATION32;
+    typedef _SYSTEM_PROCESS_INFORMATION_T<DWORD64> SYSTEM_PROCESS_INFORMATION64;
+    typedef SYSTEM_PROCESS_INFORMATION64* PSYSTEM_PROCESS_INFORMATION64;
 }

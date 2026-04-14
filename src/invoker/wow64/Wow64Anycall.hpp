@@ -7,6 +7,8 @@ namespace NtExt {
     /**
      * @class Wow64Anycall
      * @brief Executes arbitrary 64-bit shellcode from within a 32-bit process.
+     * @details Leave the final return value in RAX. On WoW64, the bridge mirrors
+     *          the high 32 bits into EDX before returning to the x86 caller.
      */
     class Wow64Anycall : public Wow64Invoker {
         private:
@@ -26,6 +28,7 @@ namespace NtExt {
 
         protected:
         VOID onEmitOpcode(_Inout_ std::string* pShell) override {
+            if ( !pShell ) return;
             pShell->append(_opcode);
         }
     };
