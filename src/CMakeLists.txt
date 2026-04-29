@@ -21,12 +21,14 @@ set(HEADER_INVOKER
 source_group("Invoker" FILES ${HEADER_INVOKER})
 
 set(HEADER_RESOLVER 
+    "resolver/ResolverBase.hpp"
     "resolver/wow64/Wow64Resolver.hpp"
     "resolver/x64/X64Resolver.hpp"
     "resolver/NtExtResolvers.hpp"
 )
 
 set(SOURCE_RESOLVER
+    "resolver/ResolverBase.cpp"
     "resolver/wow64/Wow64Resolver.cpp"
     "resolver/x64/X64Resolver.cpp"
 )
