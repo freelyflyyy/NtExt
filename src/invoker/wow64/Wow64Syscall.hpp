@@ -3,6 +3,11 @@
 
 namespace NtExt {
 	#ifdef _M_IX86
+	/**
+	 * @class Wow64Syscall
+	 * @brief Executes a 64-bit System Call (syscall) directly from a 32-bit process.
+	 * @details Bypasses WoW64 redirection layers and user-mode hooks by executing a raw x64 syscall instruction.
+	 */
 	class Wow64Syscall : public Wow64Invoker {
 		private:
 		DWORD64 _sysCallContext;
@@ -10,13 +15,15 @@ namespace NtExt {
 		DWORD64 _argCount = 0;
 
 		public:
-		/**
-		 * @brief Binds a pre-resolved syscall context for later invocation from WoW64.
-		 * @param[in] sysCallContext High 16 bits store the SSN and low 48 bits store the syscall stub address.
-		 */
 		Wow64Syscall(_In_ DWORD64 sysCallContext) : _sysCallContext(sysCallContext) {
 		}
 
+		/**
+		 * @brief Triggers the 64-bit syscall with variable arguments.
+		 * @tparam Args Variadic template arguments.
+		 * @param args The arguments for the syscall.
+		 * @return The 64-bit return value from the kernel.
+		 */
 		template<typename... Args>
 		_Check_return_ 
 			DWORD64 operator()(Args... args) {
@@ -31,10 +38,6 @@ namespace NtExt {
 		}
 
 		protected:
-		/**
-		 * @brief Encodes syscall arguments according to the x64 Windows calling convention.
-		 * @param[in,out] pShell Receives the generated machine code.
-		 */
 		VOID onPrepareEnv(_Inout_ std::string* pShell) override {
 			if ( !pShell ) return;
 
@@ -59,10 +62,6 @@ namespace NtExt {
 			pShell->append((char*) shadow_space, sizeof(shadow_space));
 		}
 
-		/**
-		 * @brief Emits the raw syscall trampoline using the stored syscall context.
-		 * @param[in,out] pShell Receives the generated machine code.
-		 */
 		VOID onEmitOpcode(_Inout_ std::string* pShell) override {
 			if ( !pShell ) return;
 			BYTE syscall_stub[] = {

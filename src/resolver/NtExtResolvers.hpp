@@ -9,9 +9,11 @@
 #endif
 
 namespace NtExt {
-    /**
-     * @brief Namespace-style resolver facade.
-     */
-    namespace Resolver {
-    }
+    #ifdef _WIN64
+    inline X64Resolver& Resolver = X64Resolver::GetInstance();
+    #endif
+
+    #ifdef _M_IX86
+    inline Wow64Resolver& Resolver = Wow64Resolver::GetInstance();
+    #endif
 }
