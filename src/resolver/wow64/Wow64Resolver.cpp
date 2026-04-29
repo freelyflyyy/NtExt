@@ -3,393 +3,505 @@
 #include "../../invoker/NtExtInvokers.hpp"
 
 namespace NtExt {
-	#ifdef _M_IX86
-	DWORD64 NTAPI Wow64Resolver::GetProcAddress64Impl(_In_ DWORD64 hMod, _In_z_ const char* funcName) {
-		if ( !hMod || !funcName ) return 0;
-		DWORD64 ldrGetProcedureAddress = GetLdrGetProcedureAddress64();
-		if ( ldrGetProcedureAddress == 0 ) return 0;
+	namespace Resolver {
+		#ifdef _M_IX86
+		namespace detail {
+			std::unordered_map<std::string, DWORD64> _cache;
+			std::shared_mutex _mutex;
+			std::unordered_map<std::string, DWORD> _cache32;
+			std::shared_mutex _mutex32;
 
-		BYTE fName[ 64 ] = { 0 };
-		MakeANSIStr<DWORD64>(funcName, fName);
+			VOID NTAPI MakeUTFStrImpl(_In_z_ LPCWSTR lpString, _Out_writes_bytes_(pointerSize + wcslen(lpString) * sizeof(WCHAR) + 16) LPBYTE outBuffer, _In_ SIZE_T pointerSize) {
+				if ( !lpString || !outBuffer ) return;
+				SIZE_T len = wcslen(lpString);
+				*(USHORT*) (outBuffer) = (USHORT) len * sizeof(WCHAR);
+				*(USHORT*) (outBuffer + 2) = (USHORT) (len + 1) * sizeof(WCHAR);
+				WCHAR* outStr;
+				if ( pointerSize == 8 ) {
+					outStr = (WCHAR*) (outBuffer + 16);
+					*(DWORD64*) (outBuffer + 8) = (DWORD64) outStr;
+				} else if ( pointerSize == 4 ) {
+					outStr = (WCHAR*) (outBuffer + 8);
+					*(DWORD*) (outBuffer + 4) = (DWORD) (SIZE_T) outStr;
+				} else { return; }
+				for ( DWORD i = 0; i < len; i++ ) outStr[ i ] = lpString[ i ];
+				outStr[ len ] = L'\0';
+			}
 
-		DWORD64 rect = 0;
+			VOID NTAPI MakeANSIStrImpl(_In_z_ LPCSTR lpString, _Out_writes_bytes_(pointerSize + strlen(lpString) + 16) LPBYTE outBuffer, _In_ SIZE_T pointerSize) {
+				if ( !lpString || !outBuffer ) return;
+				SIZE_T len = strlen(lpString);
+				*(USHORT*) (outBuffer) = (USHORT) len;
+				*(USHORT*) (outBuffer + 2) = (USHORT) (len + 1);
+				char* outStr;
+				if ( pointerSize == 8 ) {
+					outStr = (char*) (outBuffer + 16);
+					*(DWORD64*) (outBuffer + 8) = (DWORD64) outStr;
+				} else if ( pointerSize == 4 ) {
+					outStr = (char*) (outBuffer + 8);
+					*(DWORD*) (outBuffer + 4) = (DWORD) (SIZE_T) outStr;
+				} else { return; }
+				for ( DWORD i = 0; i < len; i++ ) outStr[ i ] = lpString[ i ];
+				outStr[ len ] = '\0';
+			}
 
-		(void) Call(ldrGetProcedureAddress)(
-			(DWORD64) hMod,
-			(DWORD64) &fName,
-			(DWORD64) 0,
-			(DWORD64) &rect
-			);
-		return rect;
-	}
+			DWORD64 NTAPI GetProcAddress64Impl(_In_ DWORD64 hMod, _In_z_ const char* funcName) {
+				if ( !hMod || !funcName ) return 0;
+				DWORD64 ldrGetProcedureAddress = GetLdrGetProcedureAddress64();
+				if ( ldrGetProcedureAddress == 0 ) return 0;
 
-	_Check_return_ _Success_(return != 0)
-		DWORD64 NTAPI Wow64Resolver::GetSyscallNumber64(_In_ DWORD64 hMod, _In_z_ const char* funcName) {
-		if ( !hMod || !funcName ) return 0;
-		DWORD64 funcAddr64 = this->GetProcAddress64(hMod, funcName);
-		if ( !funcAddr64 ) return 0;
+				BYTE fName[ 64 ] = { 0 };
+				MakeANSIStr<DWORD64>(funcName, fName);
 
-		auto _getSysPacked = [this] (DWORD64 funcAddr) -> DWORD64 {
-			BYTE opcodes[ 8 ] = { 0 };
-			memcpy64(&opcodes, funcAddr, sizeof(DWORD64));
-			if ( opcodes[ 0 ] == 0x4C && opcodes[ 1 ] == 0x8B && opcodes[ 2 ] == 0xD1 && opcodes[ 3 ] == 0xB8 ) {
-				WORD _ssn = opcodes[ 5 ] << 8 | opcodes[ 4 ];
-				DWORD64 _syscallAddr = funcAddr + 8;
-				return ((DWORD64) _ssn << 48) | _syscallAddr;
+				DWORD64 rect = 0;
+
+				(void) Call(ldrGetProcedureAddress)(
+					(DWORD64) hMod,
+					(DWORD64) &fName,
+					(DWORD64) 0,
+					(DWORD64) &rect
+					);
+				return rect;
+			}
+
+			DWORD NTAPI GetProcAddressImpl(_In_ DWORD hMod, _In_z_ const char* funcName) {
+				if ( !hMod || !funcName ) return 0;
+				auto fnLdrGetProcedureAddress = (NTSTATUS(NTAPI*)(DWORD, DWORD, DWORD, DWORD*))(SIZE_T) GetLdrGetProcedureAddress32();
+				if ( !fnLdrGetProcedureAddress ) return 0;
+
+				BYTE fName[ 64 ] = { 0 };
+				MakeANSIStr<DWORD>(funcName, fName);
+
+				DWORD funcAddr = 0;
+				NTSTATUS status = fnLdrGetProcedureAddress(hMod, (DWORD64) fName, 0, &funcAddr);
+				if ( NT_SUCCESS(status) ) return funcAddr;
+				return 0;
+			}
+		}
+
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetSyscallNumber64(_In_ DWORD64 hMod, _In_z_ const char* funcName) {
+			if ( !hMod || !funcName ) return 0;
+			DWORD64 funcAddr64 = GetProcAddress64(hMod, funcName);
+			if ( !funcAddr64 ) return 0;
+
+			auto _getSysPacked = [] (DWORD64 funcAddr) -> DWORD64 {
+				BYTE opcodes[ 8 ] = { 0 };
+				memcpy64(&opcodes, funcAddr, sizeof(DWORD64));
+				if ( opcodes[ 0 ] == 0x4C && opcodes[ 1 ] == 0x8B && opcodes[ 2 ] == 0xD1 && opcodes[ 3 ] == 0xB8 ) {
+					WORD _ssn = opcodes[ 5 ] << 8 | opcodes[ 4 ];
+					DWORD64 _syscallAddr = funcAddr + 8;
+					return ((DWORD64) _ssn << 48) | _syscallAddr;
+				}
+				return 0;
+			};
+
+			auto _searchImpl = [&_getSysPacked] (auto&& self, DWORD64 upAddr, DWORD64 downAddr, WORD depth = 0) -> DWORD64 {
+				if ( depth >= 500 ) return 0;
+				DWORD64 _upPacked = _getSysPacked(upAddr);
+				DWORD64 _downPacked = _getSysPacked(downAddr);
+				if ( _upPacked != 0 && _downPacked != 0 ) {
+					WORD _upSSN = (WORD) (_upPacked >> 48);
+					WORD _downSSN = (WORD) (_downPacked >> 48);
+					if ( _downSSN - _upSSN == depth * 2 ) {
+						WORD _targetSsn = _upSSN + depth;
+						DWORD64 _targetSyscallAddr = _upPacked & 0x0000FFFFFFFFFFFF;
+						return ((DWORD64) _targetSsn << 48) | _targetSyscallAddr;
+					}
+				}
+				return self(self, upAddr - 0x20, downAddr + 0x20, depth + 1);
+			};
+
+			DWORD64 basePacked = _getSysPacked(funcAddr64);
+			if ( basePacked != 0 ) return basePacked;
+
+			return _searchImpl(_searchImpl, funcAddr64 - 0x20, funcAddr64 + 0x20, 1);
+		}
+
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetModuleLdrEntry64(_In_z_ const wchar_t* moduleName) {
+			DWORD64 teb64Addr = GetTeb64();
+			if ( teb64Addr == 0 ) return 0;
+
+			TEB64 _teb64 = { 0 };
+			memcpy64(&_teb64, teb64Addr, sizeof(TEB64));
+			if ( _teb64.ProcessEnvironmentBlock == 0 ) return 0;
+
+			PEB64 _peb64 = { 0 };
+			memcpy64(&_peb64, _teb64.ProcessEnvironmentBlock, sizeof(PEB64));
+			if ( _peb64.Ldr == 0 ) return 0;
+
+			PEB_LDR_DATA64 _ldr64;
+			memcpy64(&_ldr64, _peb64.Ldr, sizeof(PEB_LDR_DATA64));
+
+			DWORD64 head = _peb64.Ldr + offsetof(PEB_LDR_DATA64, InLoadOrderModuleList);
+			DWORD64 current = _ldr64.InLoadOrderModuleList.Flink;
+
+			while ( current != head && current != 0 ) {
+				LDR_DATA_TABLE_ENTRY64 entry = { 0 };
+				memcpy64(&entry, current, sizeof(LDR_DATA_TABLE_ENTRY64));
+
+				if ( entry.BaseDllName.Buffer != 0 && entry.BaseDllName.Length > 0 ) {
+					std::wstring nameBuffer(entry.BaseDllName.Length / sizeof(wchar_t), L'\0');
+					memcpy64(nameBuffer.data(), entry.BaseDllName.Buffer, entry.BaseDllName.Length);
+
+					if ( _wcsnicmp(nameBuffer.data(), moduleName, entry.BaseDllName.Length / sizeof(wchar_t)) == 0 ) {
+						return current;
+					}
+				}
+				current = entry.InLoadOrderLinks.Flink;
 			}
 			return 0;
-		};
+		}
 
-		auto _searchImpl = [&_getSysPacked] (auto&& self, DWORD64 upAddr, DWORD64 downAddr, WORD depth = 0) -> DWORD64 {
-			if ( depth >= 500 ) return 0;
-			DWORD64 _upPacked = _getSysPacked(upAddr);
-			DWORD64 _downPacked = _getSysPacked(downAddr);
-			if ( _upPacked != 0 && _downPacked != 0 ) {
-				WORD _upSSN = (WORD) (_upPacked >> 48);
-				WORD _downSSN = (WORD) (_downPacked >> 48);
-				if ( _downSSN - _upSSN == depth * 2 ) {
-					WORD _targetSsn = _upSSN + depth;
-					DWORD64 _targetSyscallAddr = _upPacked & 0x0000FFFFFFFFFFFF;
-					return ((DWORD64) _targetSsn << 48) | _targetSyscallAddr;
-				}
-			}
-			return self(self, upAddr - 0x20, downAddr + 0x20, depth + 1);
-		};
-
-		DWORD64 basePacked = _getSysPacked(funcAddr64);
-		if ( basePacked != 0 ) return basePacked;
-
-		return _searchImpl(_searchImpl, funcAddr64 - 0x20, funcAddr64 + 0x20, 1);
-	}
-
-	_Check_return_ _Success_(return != 0)
-		DWORD64 NTAPI Wow64Resolver::GetModuleLdrEntry64(_In_z_ const wchar_t* moduleName) {
-		DWORD64 teb64Addr = GetTeb64();
-		if ( teb64Addr == 0 ) return 0;
-
-		TEB64 _teb64 = { 0 };
-		memcpy64(&_teb64, teb64Addr, sizeof(TEB64));
-		if ( _teb64.ProcessEnvironmentBlock == 0 ) return 0;
-
-		PEB64 _peb64 = { 0 };
-		memcpy64(&_peb64, _teb64.ProcessEnvironmentBlock, sizeof(PEB64));
-		if ( _peb64.Ldr == 0 ) return 0;
-
-		PEB_LDR_DATA64 _ldr64;
-		memcpy64(&_ldr64, _peb64.Ldr, sizeof(PEB_LDR_DATA64));
-
-		DWORD64 head = _peb64.Ldr + offsetof(PEB_LDR_DATA64, InLoadOrderModuleList);
-		DWORD64 current = _ldr64.InLoadOrderModuleList.Flink;
-
-		while ( current != head && current != 0 ) {
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetModuleBase64(_In_z_ const wchar_t* moduleName) {
+			if ( !moduleName ) return 0;
+			DWORD64 ldrEntry = GetModuleLdrEntry64(moduleName);
+			if ( ldrEntry == 0 ) return 0;
 			LDR_DATA_TABLE_ENTRY64 entry = { 0 };
-			memcpy64(&entry, current, sizeof(LDR_DATA_TABLE_ENTRY64));
+			memcpy64(&entry, ldrEntry, sizeof(LDR_DATA_TABLE_ENTRY64));
+			return entry.DllBase;
+		}
 
-			if ( entry.BaseDllName.Buffer != 0 && entry.BaseDllName.Length > 0 ) {
-				std::wstring nameBuffer(entry.BaseDllName.Length / sizeof(wchar_t), L'\0');
-				memcpy64(nameBuffer.data(), entry.BaseDllName.Buffer, entry.BaseDllName.Length);
+		#pragma warning(push)
+		#pragma warning(disable: 6101) 
+		VOID NTAPI memcpy64(_Out_writes_bytes_all_(sz) VOID* dest, _In_ DWORD64 src, _In_ SIZE_T sz) {
+			if ( (nullptr == dest) || (0 == src) || (0 == sz) ) return;
 
-				if ( _wcsnicmp(nameBuffer.data(), moduleName, entry.BaseDllName.Length / sizeof(wchar_t)) == 0 ) {
-					return current;
+			BYTE shellcode[] = {
+				0xBF, 0x00, 0x00, 0x00, 0x00,                               // mov edi, dest
+				0x48, 0xBE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // mov rsi, src
+				0xB9, 0x00, 0x00, 0x00, 0x00,                               // mov ecx, sz
+				0xFC,                                                       // cld
+				0x89, 0xC8,                                                 // mov eax, ecx
+				0xC1, 0xE9, 0x02,                                           // shr ecx, 2
+				0xF3, 0xA5,                                                 // rep movsd
+				0x89, 0xC1,                                                 // mov ecx, eax
+				0x83, 0xE1, 0x03,                                           // and ecx, 3
+				0xF3, 0xA4                                                  // rep movsb
+			};
+
+			*(DWORD*) (shellcode + 1) = (DWORD) dest;
+			*(DWORD64*) (shellcode + 7) = src;
+			*(DWORD*) (shellcode + 16) = (DWORD) sz;
+
+			(void) NtExt::Anycall(std::string((char*) shellcode, sizeof(shellcode)))();
+		}
+		#pragma warning(pop)
+
+		#pragma warning(push)
+		#pragma warning(disable: 6101) 
+		VOID NTAPI memcpy64(_In_ DWORD64 dest, _In_reads_bytes_(sz) const VOID* src, _In_ SIZE_T sz) {
+			if ( (0 == dest) || (nullptr == src) || (0 == sz) ) return;
+
+			BYTE shellcode[] = {
+				0x48, 0xBF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // mov rdi, dest
+				0xBE, 0x00, 0x00, 0x00, 0x00,                               // mov esi, src
+				0xB9, 0x00, 0x00, 0x00, 0x00,                               // mov ecx, sz
+				0xFC,                                                       // cld
+				0x89, 0xC8,                                                 // mov eax, ecx
+				0xC1, 0xE9, 0x02,                                           // shr ecx, 2  
+				0xF3, 0xA5,                                                 // rep movsd   
+				0x89, 0xC1,                                                 // mov ecx, eax
+				0x83, 0xE1, 0x03,                                           // and ecx, 3  
+				0xF3, 0xA4                                                  // rep movsb   
+			};
+			*(DWORD64*) (shellcode + 2) = dest;
+			*(DWORD*) (shellcode + 11) = (DWORD) src;
+			*(DWORD*) (shellcode + 16) = (DWORD) sz;
+
+			(void) NtExt::Anycall(std::string((char*) shellcode, sizeof(shellcode)))();
+		}
+		#pragma warning(pop)
+
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetNtdll64() {
+			static DWORD64 _ntdll64 = 0;
+			if ( _ntdll64 != 0 ) return _ntdll64;
+			_ntdll64 = GetModuleBase64(L"ntdll.dll");
+			return _ntdll64;
+		}
+
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetKernel64() {
+			static DWORD64 _kernel64 = 0;
+			if ( _kernel64 != 0 ) return _kernel64;
+
+			DWORD64 LdrLoadDll = detail::GetProcAddress64Impl(GetNtdll64(), "LdrLoadDll");
+			if ( !LdrLoadDll ) return 0;
+
+			BYTE kernel32Str[ 64 ] = { 0 };
+			MakeUTFStr<DWORD64>(L"kernel32.dll", kernel32Str);
+
+			PEB64 _peb64 = { 0 };
+			memcpy64(&_peb64, GetPeb64(), sizeof(PEB64));
+
+			HANDLE hModule = GetModuleHandle(nullptr);
+			auto* pInh = (IMAGE_NT_HEADERS*) ((BYTE*) hModule + ((IMAGE_DOS_HEADER*) hModule)->e_lfanew);
+			WORD& subSystem = pInh->OptionalHeader.Subsystem;
+
+			DWORD oldProctect = 0;
+			RTL_USER_PROCESS_PARAMETERS64 _upp64 = { 0 };
+			memcpy64(&_upp64, _peb64.ProcessParameters, sizeof(RTL_USER_PROCESS_PARAMETERS64));
+
+			if ( subSystem == IMAGE_SUBSYSTEM_WINDOWS_CUI &&
+				VirtualProtect(&subSystem, sizeof(WORD), PAGE_READWRITE, &oldProctect) ) {
+
+				RTL_USER_PROCESS_PARAMETERS64 fakeUpp = _upp64;
+				fakeUpp.ConsoleHandle = 0;
+				fakeUpp.ConsoleFlags = 0;
+				fakeUpp.StandardInput = 0;
+				fakeUpp.StandardOutput = 0;
+				fakeUpp.StandardError = 0;
+				fakeUpp.WindowFlags = 0;
+
+				memcpy64(_peb64.ProcessParameters, &fakeUpp, sizeof(RTL_USER_PROCESS_PARAMETERS64));
+				subSystem = IMAGE_SUBSYSTEM_WINDOWS_GUI;
+			}
+
+			(void) Call(LdrLoadDll)(
+				(DWORD64) 0,
+				(DWORD64) 0,
+				(DWORD64) kernel32Str,
+				(DWORD64) &_kernel64
+				);
+
+			if ( oldProctect ) {
+				memcpy64(_peb64.ProcessParameters, &_upp64, sizeof(RTL_USER_PROCESS_PARAMETERS64));
+				subSystem = IMAGE_SUBSYSTEM_WINDOWS_CUI;
+				VirtualProtect(&subSystem, sizeof(WORD), oldProctect, &oldProctect);
+			}
+
+			return _kernel64;
+		}
+
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI LoadLibrary64(_In_z_ const wchar_t* moduleName) {
+			if ( !moduleName ) return 0;
+			DWORD64 hMod = GetModuleBase64(moduleName);
+			if ( hMod != 0 ) return hMod;
+
+			DWORD64 pLoadLibraryW = GetProcAddress64(GetKernel64(), "LoadLibraryW");
+			if ( !pLoadLibraryW ) return 0;
+
+			return Call(pLoadLibraryW)((DWORD64) moduleName);
+		}
+
+		_Check_return_ _Success_(return != 0)
+			DWORD NTAPI GetModuleBase32(_In_z_ const wchar_t* moduleName) {
+			if ( !moduleName ) return 0;
+			DWORD pebAddr = GetPeb32();
+			if ( !pebAddr ) return 0;
+
+			auto* peb32 = (PEB32*) pebAddr;
+			auto ldr = (PEB_LDR_DATA32*) peb32->Ldr;
+			if ( !ldr ) return 0;
+
+			auto listHead = (SIZE_T) &ldr->InLoadOrderModuleList;
+			DWORD currentNode = ldr->InLoadOrderModuleList.Flink;
+
+			while ( currentNode != listHead && currentNode != 0 ) {
+				auto* entry = (LDR_DATA_TABLE_ENTRY32*) currentNode;
+				if ( entry->DllBase != 0 && entry->BaseDllName.Buffer != 0 ) {
+					if ( _wcsicmp((wchar_t*) entry->BaseDllName.Buffer, moduleName) == 0 ) {
+						return entry->DllBase;
+					}
+				}
+				currentNode = entry->InLoadOrderLinks.Flink;
+			}
+			return 0;
+		}
+
+		_Check_return_ _Success_(return != 0)
+			DWORD NTAPI GetTeb32() {
+			DWORD _teb32 = 0;
+			_teb32 = __readfsdword(static_cast<DWORD>(offsetof(NT_TIB32, Self)));
+			return _teb32;
+		}
+
+		_Check_return_ _Success_(return != 0)
+			DWORD NTAPI GetPeb32() {
+			DWORD _peb32 = 0;
+			_peb32 = __readfsdword(static_cast<DWORD>(offsetof(TEB32, ProcessEnvironmentBlock)));
+			return _peb32;
+		}
+
+		_Check_return_ _Success_(return != 0)
+			DWORD NTAPI GetNtdll32() {
+			static DWORD _ntdll32 = 0;
+			if ( _ntdll32 != 0 ) return _ntdll32;
+			_ntdll32 = GetModuleBase32(L"ntdll.dll");
+			return _ntdll32;
+		}
+
+		_Check_return_ _Success_(return != 0)
+			DWORD NTAPI GetKernel32() {
+			static DWORD _kernel32 = 0;
+			if ( _kernel32 != 0 ) return _kernel32;
+			_kernel32 = GetModuleBase32(L"kernel32.dll");
+			return _kernel32;
+		}
+
+		_Check_return_ _Success_(return != 0)
+			DWORD NTAPI GetLdrGetProcedureAddress32() {
+			static DWORD _ldrGetProcAddr32 = 0;
+			if ( _ldrGetProcAddr32 != 0 ) return _ldrGetProcAddr32;
+
+			DWORD dllBase = GetNtdll32();
+			if ( !dllBase ) return 0;
+
+			auto* dosHeader = (IMAGE_DOS_HEADER*) (SIZE_T) dllBase;
+			if ( dosHeader->e_magic != IMAGE_DOS_SIGNATURE ) return 0;
+
+			auto ntHeaders = (IMAGE_NT_HEADERS32*) (SIZE_T) (dllBase + dosHeader->e_lfanew);
+			if ( ntHeaders->Signature != IMAGE_NT_SIGNATURE ) return 0;
+
+			DWORD exportRva = ntHeaders->OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].VirtualAddress;
+			if ( !exportRva ) return 0;
+
+			auto exportDir = (IMAGE_EXPORT_DIRECTORY*) (SIZE_T) (dllBase + exportRva);
+			auto nameTable = (DWORD*) (SIZE_T) (dllBase + exportDir->AddressOfNames);
+			WORD* ordTable = (WORD*) (SIZE_T) (dllBase + exportDir->AddressOfNameOrdinals);
+			auto funcTable = (DWORD*) (SIZE_T) (dllBase + exportDir->AddressOfFunctions);
+
+			for ( DWORD i = 0; i < exportDir->NumberOfNames; i++ ) {
+				char* funcName = (char*) (SIZE_T) (dllBase + nameTable[ i ]);
+				if ( strcmp(funcName, "LdrGetProcedureAddress") == 0 ) {
+					_ldrGetProcAddr32 = dllBase + funcTable[ ordTable[ i ] ];
+					return _ldrGetProcAddr32;
 				}
 			}
-			current = entry.InLoadOrderLinks.Flink;
-		}
-		return 0;
-	}
-
-	_Check_return_ _Success_(return != 0)
-		DWORD64 NTAPI Wow64Resolver::GetModuleBase64(_In_z_ const wchar_t* moduleName) {
-		if ( !moduleName ) return 0;
-		DWORD64 ldrEntry = GetModuleLdrEntry64(moduleName);
-		if ( ldrEntry == 0 ) return 0;
-		LDR_DATA_TABLE_ENTRY64 entry = { 0 };
-		memcpy64(&entry, ldrEntry, sizeof(LDR_DATA_TABLE_ENTRY64));
-		return entry.DllBase;
-	}
-
-	#pragma warning(push)
-	#pragma warning(disable: 6101) 
-	VOID NTAPI Wow64Resolver::memcpy64(_Out_writes_bytes_all_(sz) VOID* dest, _In_ DWORD64 src, _In_ SIZE_T sz) {
-		if ( (nullptr == dest) || (0 == src) || (0 == sz) ) return;
-
-		BYTE shellcode[] = {
-			0xBF, 0x00, 0x00, 0x00, 0x00,                               // mov edi, dest
-			0x48, 0xBE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // mov rsi, src
-			0xB9, 0x00, 0x00, 0x00, 0x00,                               // mov ecx, sz
-			0xFC,                                                       // cld
-			0x89, 0xC8,                                                 // mov eax, ecx
-			0xC1, 0xE9, 0x02,                                           // shr ecx, 2
-			0xF3, 0xA5,                                                 // rep movsd
-			0x89, 0xC1,                                                 // mov ecx, eax
-			0x83, 0xE1, 0x03,                                           // and ecx, 3
-			0xF3, 0xA4                                                  // rep movsb
-		};
-
-		*(DWORD*) (shellcode + 1) = (DWORD) dest;
-		*(DWORD64*) (shellcode + 7) = src;
-		*(DWORD*) (shellcode + 16) = (DWORD) sz;
-
-		(void) NtExt::Anycall(std::string((char*) shellcode, sizeof(shellcode)))();
-	}
-	#pragma warning(pop)
-
-	#pragma warning(push)
-	#pragma warning(disable: 6101) 
-VOID NTAPI Wow64Resolver::memcpy64(_In_ DWORD64 dest, _In_reads_bytes_(sz) const VOID* src, _In_ SIZE_T sz) {
-		if ( (0 == dest) || (nullptr == src) || (0 == sz) ) return;
-
-		BYTE shellcode[] = {
-			0x48, 0xBF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // mov rdi, dest
-			0xBE, 0x00, 0x00, 0x00, 0x00,                               // mov esi, src
-			0xB9, 0x00, 0x00, 0x00, 0x00,                               // mov ecx, sz
-			0xFC,                                                       // cld
-			0x89, 0xC8,                                                 // mov eax, ecx
-			0xC1, 0xE9, 0x02,                                           // shr ecx, 2  
-			0xF3, 0xA5,                                                 // rep movsd   
-			0x89, 0xC1,                                                 // mov ecx, eax
-			0x83, 0xE1, 0x03,                                           // and ecx, 3  
-			0xF3, 0xA4                                                  // rep movsb   
-		};
-		*(DWORD64*) (shellcode + 2) = dest;
-		*(DWORD*) (shellcode + 11) = (DWORD) src;
-		*(DWORD*) (shellcode + 16) = (DWORD) sz;
-
-		(void) NtExt::Anycall(std::string((char*) shellcode, sizeof(shellcode)))();
-	}
-	#pragma warning(pop)
-
-	_Check_return_ _Success_(return != 0)
-		DWORD64 NTAPI Wow64Resolver::GetNtdll64() {
-		static DWORD64 _ntdll64 = 0;
-		if ( _ntdll64 != 0 ) return _ntdll64;
-		_ntdll64 = GetModuleBase64(L"ntdll.dll");
-		return _ntdll64;
-	}
-
-	_Check_return_ _Success_(return != 0)
-		DWORD64 NTAPI Wow64Resolver::GetKernel64() {
-		static DWORD64 _kernel64 = 0;
-		if ( _kernel64 != 0 ) return _kernel64;
-
-		DWORD64 LdrLoadDll = GetProcAddress64Impl(GetNtdll64(), "LdrLoadDll");
-		if ( !LdrLoadDll ) return 0;
-
-		BYTE kernel32Str[ 64 ] = { 0 };
-		MakeUTFStr<DWORD64>(L"kernel32.dll", kernel32Str);
-
-		PEB64 _peb64 = { 0 };
-		memcpy64(&_peb64, GetPeb64(), sizeof(PEB64));
-
-		HANDLE hModule = GetModuleHandle(nullptr);
-		auto* pInh = (IMAGE_NT_HEADERS*) ((BYTE*) hModule + ((IMAGE_DOS_HEADER*) hModule)->e_lfanew);
-		WORD& subSystem = pInh->OptionalHeader.Subsystem;
-
-		DWORD oldProctect = 0;
-		RTL_USER_PROCESS_PARAMETERS64 _upp64 = { 0 };
-		memcpy64(&_upp64, _peb64.ProcessParameters, sizeof(RTL_USER_PROCESS_PARAMETERS64));
-
-		if ( subSystem == IMAGE_SUBSYSTEM_WINDOWS_CUI &&
-			VirtualProtect(&subSystem, sizeof(WORD), PAGE_READWRITE, &oldProctect) ) {
-
-			RTL_USER_PROCESS_PARAMETERS64 fakeUpp = _upp64;
-			fakeUpp.ConsoleHandle = 0;
-			fakeUpp.ConsoleFlags = 0;
-			fakeUpp.StandardInput = 0;
-			fakeUpp.StandardOutput = 0;
-			fakeUpp.StandardError = 0;
-			fakeUpp.WindowFlags = 0;
-
-			memcpy64(_peb64.ProcessParameters, &fakeUpp, sizeof(RTL_USER_PROCESS_PARAMETERS64));
-			subSystem = IMAGE_SUBSYSTEM_WINDOWS_GUI;
+			return 0;
 		}
 
-		(void) Call(LdrLoadDll)(
-			(DWORD64) 0,
-			(DWORD64) 0,
-			(DWORD64) kernel32Str,
-			(DWORD64) &_kernel64
-			);
+		_Check_return_ _Success_(return != 0)
+			DWORD NTAPI LoadLibrary32(_In_z_ const wchar_t* moduleName) {
+			if ( !moduleName ) return 0;
+			DWORD hMod = GetModuleBase32(moduleName);
+			if ( hMod != 0 ) return hMod;
 
-		if ( oldProctect ) {
-			memcpy64(_peb64.ProcessParameters, &_upp64, sizeof(RTL_USER_PROCESS_PARAMETERS64));
-			subSystem = IMAGE_SUBSYSTEM_WINDOWS_CUI;
-			VirtualProtect(&subSystem, sizeof(WORD), oldProctect, &oldProctect);
+			DWORD pLdrLoadDll32 = GetProcAddress32(GetNtdll32(), "LdrLoadDll");
+			if ( !pLdrLoadDll32 ) return 0;
+
+			BYTE buffer[ 64 ] = { 0 };
+			MakeUTFStr < DWORD >(moduleName, buffer);
+
+			DWORD hResult32 = 0;
+			NTSTATUS status = ((NTSTATUS(NTAPI*)(DWORD, DWORD, DWORD, DWORD))(SIZE_T) pLdrLoadDll32)(0, 0, (DWORD) (SIZE_T) buffer, (DWORD) (SIZE_T) &hResult32);
+			if ( NT_SUCCESS(status) ) return hResult32;
+			return 0;
 		}
 
-		return _kernel64;
-	}
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetLdrGetProcedureAddress64() {
+			DWORD64 dllBase = GetNtdll64();
+			if ( !dllBase ) return 0;
 
-	_Check_return_ _Success_(return != 0)
-		DWORD64 NTAPI Wow64Resolver::LoadLibrary64(_In_z_ const wchar_t* moduleName) {
-		if ( !moduleName ) return 0;
-		DWORD64 hMod = GetModuleBase64(moduleName);
-		if ( hMod != 0 ) return hMod;
+			IMAGE_DOS_HEADER idh;
+			memcpy64(&idh, dllBase, sizeof(IMAGE_DOS_HEADER));
 
-		DWORD64 pLoadLibraryW = GetProcAddress64(GetKernel64(), "LoadLibraryW");
-		if ( !pLoadLibraryW ) return 0;
+			IMAGE_NT_HEADERS64 inth;
+			memcpy64(&inth, dllBase + idh.e_lfanew, sizeof(IMAGE_NT_HEADERS64));
 
-		return Call(pLoadLibraryW)((DWORD64) moduleName);
-	}
+			IMAGE_EXPORT_DIRECTORY ied;
+			memcpy64(&ied, dllBase + inth.OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].VirtualAddress, sizeof(IMAGE_EXPORT_DIRECTORY));
 
-	DWORD NTAPI Wow64Resolver::GetProcAddressImpl(_In_ DWORD hMod, _In_z_ const char* funcName) {
-		if ( !hMod || !funcName ) return 0;
-		auto fnLdrGetProcedureAddress = (NTSTATUS(NTAPI*)(DWORD, DWORD, DWORD, DWORD*))(SIZE_T) GetLdrGetProcedureAddress32();
-		if ( !fnLdrGetProcedureAddress ) return 0;
+			std::vector < DWORD > rvaTable(ied.NumberOfFunctions, 0);
+			std::vector < DWORD > nameTable(ied.NumberOfNames, 0);
+			std::vector < WORD > ordTable(ied.NumberOfNames, 0);
 
-		BYTE fName[ 64 ] = { 0 };
-		MakeANSIStr<DWORD>(funcName, fName);
+			memcpy64(rvaTable.data(), dllBase + ied.AddressOfFunctions, ied.NumberOfFunctions * sizeof(DWORD));
+			memcpy64(nameTable.data(), dllBase + ied.AddressOfNames, ied.NumberOfNames * sizeof(DWORD));
+			memcpy64(ordTable.data(), dllBase + ied.AddressOfNameOrdinals, ied.NumberOfNames * sizeof(WORD));
 
-		DWORD funcAddr = 0;
-		NTSTATUS status = fnLdrGetProcedureAddress(hMod, (DWORD64) fName, 0, &funcAddr);
-		if ( NT_SUCCESS(status) ) return funcAddr;
-		return 0;
-	}
-
-	_Check_return_ _Success_(return != 0)
-		DWORD NTAPI Wow64Resolver::GetModuleBase32(_In_z_ const wchar_t* moduleName) {
-		if ( !moduleName ) return 0;
-		DWORD pebAddr = GetPeb32();
-		if ( !pebAddr ) return 0;
-
-		auto* peb32 = (PEB32*) pebAddr;
-		auto ldr = (PEB_LDR_DATA32*) peb32->Ldr;
-		if ( !ldr ) return 0;
-
-		auto listHead = (SIZE_T) &ldr->InLoadOrderModuleList;
-		DWORD currentNode = ldr->InLoadOrderModuleList.Flink;
-
-		while ( currentNode != listHead && currentNode != 0 ) {
-			auto* entry = (LDR_DATA_TABLE_ENTRY32*) currentNode;
-			if ( entry->DllBase != 0 && entry->BaseDllName.Buffer != 0 ) {
-				if ( _wcsicmp((wchar_t*) entry->BaseDllName.Buffer, moduleName) == 0 ) {
-					return entry->DllBase;
-				}
+			for ( DWORD i = 0; i < ied.NumberOfNames; i++ ) {
+				char funcName[ 256 ] = { 0 };
+				memcpy64(funcName, dllBase + nameTable[ i ], sizeof(funcName) - 1);
+				if ( strcmp(funcName, "LdrGetProcedureAddress") != 0 ) continue;
+				else return dllBase + rvaTable[ ordTable[ i ] ];
 			}
-			currentNode = entry->InLoadOrderLinks.Flink;
+			return 0;
 		}
-		return 0;
-	}
 
-	_Check_return_ _Success_(return != 0)
-		DWORD NTAPI Wow64Resolver::GetTeb32() {
-		DWORD _teb32 = 0;
-		_teb32 = __readfsdword(static_cast<DWORD>(offsetof(NT_TIB32, Self)));
-		return _teb32;
-	}
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetTeb64() {
+			return Anycall(std::string("\x65\x48\x8B\x04\x25\x30\x00\x00\x00", 9))();  // mov rax, qword ptr gs:[0x30]
+		}
 
-	_Check_return_ _Success_(return != 0)
-		DWORD NTAPI Wow64Resolver::GetPeb32() {
-		DWORD _peb32 = 0;
-		_peb32 = __readfsdword(static_cast<DWORD>(offsetof(TEB32, ProcessEnvironmentBlock)));
-		return _peb32;
-	}
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetPeb64() {
+			return Anycall(std::string("\x65\x48\x8B\x04\x25\x60\x00\x00\x00", 9))();  // mov rax, qword ptr gs:[0x60]
+		}
 
-	_Check_return_ _Success_(return != 0)
-		DWORD NTAPI Wow64Resolver::GetNtdll32() {
-		static DWORD _ntdll32 = 0;
-		if ( _ntdll32 != 0 ) return _ntdll32;
-		_ntdll32 = GetModuleBase32(L"ntdll.dll");
-		return _ntdll32;
-	}
+		_Success_(return != 0)
+			DWORD64 IsCached64(_In_ const std::string& funcName) {
+			std::shared_lock<std::shared_mutex> lock(detail::_mutex);
+			auto it = detail::_cache.find(funcName);
+			if ( it != detail::_cache.end() ) return it->second;
+			return 0;
+		}
 
-	_Check_return_ _Success_(return != 0)
-		DWORD NTAPI Wow64Resolver::GetKernel32() {
-		static DWORD _kernel32 = 0;
-		if ( _kernel32 != 0 ) return _kernel32;
-		_kernel32 = GetModuleBase32(L"kernel32.dll");
-		return _kernel32;
-	}
-
-	_Check_return_ _Success_(return != 0)
-		DWORD NTAPI Wow64Resolver::GetLdrGetProcedureAddress32() {
-		static DWORD _ldrGetProcAddr32 = 0;
-		if ( _ldrGetProcAddr32 != 0 ) return _ldrGetProcAddr32;
-
-		DWORD dllBase = GetNtdll32();
-		if ( !dllBase ) return 0;
-
-		auto* dosHeader = (IMAGE_DOS_HEADER*) (SIZE_T) dllBase;
-		if ( dosHeader->e_magic != IMAGE_DOS_SIGNATURE ) return 0;
-
-		auto ntHeaders = (IMAGE_NT_HEADERS32*) (SIZE_T) (dllBase + dosHeader->e_lfanew);
-		if ( ntHeaders->Signature != IMAGE_NT_SIGNATURE ) return 0;
-
-		DWORD exportRva = ntHeaders->OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].VirtualAddress;
-		if ( !exportRva ) return 0;
-
-		auto exportDir = (IMAGE_EXPORT_DIRECTORY*) (SIZE_T) (dllBase + exportRva);
-		auto nameTable = (DWORD*) (SIZE_T) (dllBase + exportDir->AddressOfNames);
-		WORD* ordTable = (WORD*) (SIZE_T) (dllBase + exportDir->AddressOfNameOrdinals);
-		auto funcTable = (DWORD*) (SIZE_T) (dllBase + exportDir->AddressOfFunctions);
-
-		for ( DWORD i = 0; i < exportDir->NumberOfNames; i++ ) {
-			char* funcName = (char*) (SIZE_T) (dllBase + nameTable[ i ]);
-			if ( strcmp(funcName, "LdrGetProcedureAddress") == 0 ) {
-				_ldrGetProcAddr32 = dllBase + funcTable[ ordTable[ i ] ];
-				return _ldrGetProcAddr32;
+		_Check_return_ _Success_(return != 0)
+			DWORD64 GetProcAddress64(_In_ DWORD64 hMod, _In_ const std::string& funcName) {
+			if ( auto addr = IsCached64(funcName) ) return addr;
+			if ( hMod == 0 ) return 0;
+			DWORD64 procAddr = detail::GetProcAddress64Impl(hMod, funcName.data());
+			if ( procAddr ) {
+				std::unique_lock<std::shared_mutex> lock(detail::_mutex);
+				detail::_cache[ funcName ] = procAddr;
 			}
+			return procAddr;
 		}
-		return 0;
-	}
 
-	_Check_return_ _Success_(return != 0)
-		DWORD NTAPI Wow64Resolver::LoadLibrary32(_In_z_ const wchar_t* moduleName) {
-		if ( !moduleName ) return 0;
-		DWORD hMod = GetModuleBase32(moduleName);
-		if ( hMod != 0 ) return hMod;
-
-		DWORD pLdrLoadDll32 = GetProcAddress32(GetNtdll32(), "LdrLoadDll");
-		if ( !pLdrLoadDll32 ) return 0;
-
-		BYTE buffer[ 64 ] = { 0 };
-		MakeUTFStr < DWORD >(moduleName, buffer);
-
-		DWORD hResult32 = 0;
-		NTSTATUS status = ((NTSTATUS(NTAPI*)(DWORD, DWORD, DWORD, DWORD))(SIZE_T) pLdrLoadDll32)(0, 0, (DWORD) (SIZE_T) buffer, (DWORD) (SIZE_T) &hResult32);
-		if ( NT_SUCCESS(status) ) return hResult32;
-		return 0;
-	}
-
-	_Check_return_ _Success_(return != 0)
-		DWORD64 NTAPI Wow64Resolver::GetLdrGetProcedureAddress64() {
-		DWORD64 dllBase = GetNtdll64();
-		if ( !dllBase ) return 0;
-
-		IMAGE_DOS_HEADER idh;
-		memcpy64(&idh, dllBase, sizeof(IMAGE_DOS_HEADER));
-
-		IMAGE_NT_HEADERS64 inth;
-		memcpy64(&inth, dllBase + idh.e_lfanew, sizeof(IMAGE_NT_HEADERS64));
-
-		IMAGE_EXPORT_DIRECTORY ied;
-		memcpy64(&ied, dllBase + inth.OptionalHeader.DataDirectory[ IMAGE_DIRECTORY_ENTRY_EXPORT ].VirtualAddress, sizeof(IMAGE_EXPORT_DIRECTORY));
-
-		std::vector < DWORD > rvaTable(ied.NumberOfFunctions, 0);
-		std::vector < DWORD > nameTable(ied.NumberOfNames, 0);
-		std::vector < WORD > ordTable(ied.NumberOfNames, 0);
-
-		memcpy64(rvaTable.data(), dllBase + ied.AddressOfFunctions, ied.NumberOfFunctions * sizeof(DWORD));
-		memcpy64(nameTable.data(), dllBase + ied.AddressOfNames, ied.NumberOfNames * sizeof(DWORD));
-		memcpy64(ordTable.data(), dllBase + ied.AddressOfNameOrdinals, ied.NumberOfNames * sizeof(WORD));
-
-		for ( DWORD i = 0; i < ied.NumberOfNames; i++ ) {
-			char funcName[ 256 ] = { 0 };
-			memcpy64(funcName, dllBase + nameTable[ i ], sizeof(funcName) - 1);
-			if ( strcmp(funcName, "LdrGetProcedureAddress") != 0 ) continue;
-			else return dllBase + rvaTable[ ordTable[ i ] ];
+		_Check_return_ _Success_(return != 0)
+			DWORD64 GetProcAddress64(_In_ const std::wstring& moduleName, _In_ const std::string& funcName) {
+			if ( auto addr = IsCached64(funcName) ) return addr;
+			DWORD64 hMod = GetModuleBase64(moduleName.data());
+			if ( hMod == 0 ) return 0;
+			return GetProcAddress64(hMod, funcName);
 		}
-		return 0;
-	}
 
-	_Check_return_ _Success_(return != 0)
-		DWORD64 NTAPI Wow64Resolver::GetTeb64() {
-		return Anycall(std::string("\x65\x48\x8B\x04\x25\x30\x00\x00\x00", 9))();  // mov rax, qword ptr gs:[0x30]
-	}
+		_Check_return_ _Success_(return != 0)
+			DWORD64 GetProcAddress64(_In_ const std::string& funcName) {
+			if ( auto addr = IsCached64(funcName) ) return addr;
+			return GetProcAddress64(GetNtdll64(), funcName);
+		}
 
-	_Check_return_ _Success_(return != 0)
-		DWORD64 NTAPI Wow64Resolver::GetPeb64() {
-		return Anycall(std::string("\x65\x48\x8B\x04\x25\x60\x00\x00\x00", 9))();  // mov rax, qword ptr gs:[0x60]
+		_Success_(return != 0)
+			DWORD IsCached32(_In_ const std::string& funcName) {
+			std::shared_lock<std::shared_mutex> lock(detail::_mutex32);
+			auto it = detail::_cache32.find(funcName);
+			if ( it != detail::_cache32.end() ) return it->second;
+			return 0;
+		}
+
+		_Check_return_ _Success_(return != 0)
+			DWORD GetProcAddress32(_In_ DWORD hMod, _In_ const std::string& funcName) {
+			if ( auto addr = IsCached32(funcName) ) return addr;
+			if ( hMod == 0 ) return 0;
+			DWORD procAddr = detail::GetProcAddressImpl(hMod, funcName.c_str());
+			if ( procAddr ) {
+				std::unique_lock<std::shared_mutex> lock(detail::_mutex32);
+				detail::_cache32[ funcName ] = procAddr;
+			}
+			return procAddr;
+		}
+
+		_Check_return_ _Success_(return != 0)
+			DWORD GetProcAddress32(_In_ const std::wstring& moduleName, _In_ const std::string& funcName) {
+			if ( auto addr = IsCached32(funcName) ) return addr;
+			DWORD hMod = GetModuleBase32(moduleName.c_str());
+			if ( hMod == 0 ) hMod = LoadLibrary32(moduleName.c_str());
+			if ( hMod == 0 ) return 0;
+			return GetProcAddress32(hMod, funcName);
+		}
+
+		_Check_return_ _Success_(return != 0)
+			DWORD GetProcAddress32(_In_ const std::string& funcName) {
+			if ( auto addr = IsCached32(funcName) ) return addr;
+			return GetProcAddress32(GetNtdll32(), funcName);
+		}
+		#endif
 	}
-	#endif
 }
