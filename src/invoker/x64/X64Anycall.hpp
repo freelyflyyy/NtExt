@@ -14,6 +14,10 @@ namespace NtExt {
         std::string _opcode;
 
         public:
+        /**
+         * @brief Stores the raw opcode sequence to execute.
+         * @param[in] opcode The machine-code bytes to append verbatim to the generated routine.
+         */
         X64Anycall(_In_ const std::string& opcode) : _opcode(opcode) {}
         ~X64Anycall() = default;
 
@@ -27,6 +31,10 @@ namespace NtExt {
         }
 
         protected:
+        /**
+         * @brief Appends the caller-supplied opcode sequence to the generated routine.
+         * @param[in,out] pShell Receives the generated machine code.
+         */
         VOID onEmitOpcode(_Inout_ std::string* pShell) override {
             if ( !pShell ) return;
             pShell->append(_opcode);
