@@ -3,234 +3,305 @@
 
 namespace NtExt {
 
-    #ifdef _M_IX86
-    class Wow64Resolver : public ResolverBase {
-        public:
-        /**
-        * @brief Retrieves the singleton instance of the Wow64Resolver.
-        * @return A reference to the static Wow64Resolver instance.
-        */
-        static Wow64Resolver& GetInstance() {
-            static Wow64Resolver instance;
-            return instance;
-        }
+	#ifdef _M_IX86
+	class Wow64Resolver : public ResolverBase {
+		public:
+		/**
+		 * @brief Retrieves the singleton instance of the Wow64Resolver.
+		 * @return A reference to the static Wow64Resolver instance.
+		 */
+		static Wow64Resolver& GetInstance() {
+			static Wow64Resolver instance;
+			return instance;
+		}
 
-        ~Wow64Resolver() override = default;
+		~Wow64Resolver() override = default;
 
-        /**
-         * @brief Get the Nt function ssn and syscall commend addr.
-         * @param[in] hMod The 64-bit base address of the module (e.g., ntdll).
-         * @param[in] funcName The name of the NTAPI function.
-         * @return A DWORD64 value where the high 16 bits represent the SSN, and the low 48 bits represent the syscall address.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD64 NTAPI GetSyscallNumber64(_In_ DWORD64 hMod, _In_z_ const char* funcName) override;
+		/**
+		 * @brief Dynamically locates the 64-bit System Service Number (SSN) and syscall address.
+		 * @param[in] ModuleBase The 64-bit base address of the module, for example ntdll.dll.
+		 * @param[in] FunctionName The exported NTAPI function name.
+		 * @return An NtResult containing the packed SSN and syscall address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD64> NTAPI GetSyscallNumber64(_In_ DWORD64 ModuleBase, _In_z_ PCSTR FunctionName) override;
 
-        /**
-         * @brief Get the module node in the 64-bit PEB LDR.
-         * @param[in] moduleName The wide-character name of the module.
-         * @return The 64-bit memory address of the module's LDR_DATA_TABLE_ENTRY.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD64 NTAPI GetModuleLdrEntry64(_In_z_ const wchar_t* moduleName) override;
+		/**
+		 * @brief Retrieves the module entry from the 64-bit PEB loader list.
+		 * @param[in] ModuleName The wide-character module name.
+		 * @return An NtResult containing the 64-bit LDR_DATA_TABLE_ENTRY address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD64> NTAPI GetModuleLdrEntry64(_In_z_ PCWSTR ModuleName) override;
 
-        /**
-         * @brief Get the 64-bit module base address.
-         * @param[in] moduleName The wide-character name of the module.
-         * @return The 64-bit base address of the module.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD64 NTAPI GetModuleBase64(_In_z_ const wchar_t* moduleName) override;
+		/**
+		 * @brief Retrieves the 64-bit base address of a loaded module from a Wow64 process.
+		 * @param[in] ModuleName The wide-character module name.
+		 * @return An NtResult containing the 64-bit module base address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD64> NTAPI GetModuleBase64(_In_z_ PCWSTR ModuleName) override;
 
-        /**
-         * @brief Get the 64-bit TEB (Thread Environment Block) address of the current process.
-         * @return The 64-bit TEB address.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD64 NTAPI GetTeb64() override;
+		/**
+		 * @brief Gets the 64-bit Thread Environment Block (TEB) address.
+		 * @return The 64-bit TEB address.
+		 */
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetTeb64() override;
 
-        /**
-         * @brief Get the 64-bit PEB (Process Environment Block) address of the current process.
-         * @return The 64-bit PEB address.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD64 NTAPI GetPeb64() override;
+		/**
+		 * @brief Gets the 64-bit Process Environment Block (PEB) address.
+		 * @return The 64-bit PEB address.
+		 */
+		_Check_return_ _Success_(return != 0)
+			DWORD64 NTAPI GetPeb64() override;
 
-        /**
-         * @brief Get the 64-bit ntdll.dll base address.
-         * @return The 64-bit module base address of ntdll.dll.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD64 NTAPI GetNtdll64() override;
+		/**
+		 * @brief Retrieves the 64-bit base address of ntdll.dll.
+		 * @return An NtResult containing the 64-bit ntdll.dll base address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD64> NTAPI GetNtdll64() override;
 
-        /**
-         * @brief Get the 64-bit kernel32.dll base address.
-         * @return The 64-bit module base address of kernel32.dll.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD64 NTAPI GetKernel64() override;
+		/**
+		 * @brief Retrieves the 64-bit base address of kernel32.dll.
+		 * @return An NtResult containing the 64-bit kernel32.dll base address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD64> NTAPI GetKernel64() override;
 
-        /**
-         * @brief Manually loads a library into the 64-bit address space of the Wow64 process.
-         * @param[in] moduleName The wide-character name of the module to load.
-         * @return The 64-bit base address of the loaded module.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD64 NTAPI LoadLibrary64(_In_z_ const wchar_t* moduleName) override;
+		/**
+		 * @brief Manually loads a library into the 64-bit address space of the Wow64 process.
+		 * @param[in] ModuleName The wide-character module name to load.
+		 * @return An NtResult containing the 64-bit loaded module base address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD64> NTAPI LoadLibrary64(_In_z_ PCWSTR ModuleName) override;
 
-        /**
-         * @brief Retrieves the 64-bit address of the LdrGetProcedureAddress function.
-         * @return The 64-bit address of the function.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD64 NTAPI GetLdrGetProcedureAddress64();
+		/**
+		 * @brief Maps a 64-bit KnownDll section view.
+		 * @param[in] DllName The KnownDll name to map.
+		 * @param[out] MappedBase Receives the mapped 64-bit base address on success.
+		 * @param[out] ViewSize Optional pointer that receives the mapped view size.
+		 * @return NtStatus::Success on success; failure status otherwise.
+		 */
+		_Check_return_
+			NtStatus NTAPI MapKnownDllSection64(_In_z_ PCWSTR DllName, _Out_ DWORD64* MappedBase, _Out_opt_ DWORD64* ViewSize = nullptr) override;
 
-        /**
-         * @brief Copies memory from a 64-bit source address to a 32-bit destination buffer using a shellcode stub.
-         * @param[out] dest The destination buffer in the 32-bit address space.
-         * @param[in] src The 64-bit source address to copy from.
-         * @param[in] sz The number of bytes to copy.
-         */
-        VOID NTAPI memcpy64(_Out_writes_bytes_all_(sz) VOID* dest, _In_ DWORD64 src, _In_ SIZE_T sz);
+		/**
+		 * @brief Unmaps a 64-bit KnownDll section view.
+		 * @param[in] MappedBase The mapped 64-bit base address.
+		 * @return NtStatus::Success on success; failure status otherwise.
+		 */
+		_Check_return_
+			NtStatus NTAPI UnmapKnownDllSection64(_In_ DWORD64 MappedBase) override;
 
-        /**
-         * @brief Copies memory from a 32-bit source buffer to a 64-bit destination address using a shellcode stub.
-         * @param[in] dest The 64-bit destination address to copy to.
-         * @param[in] src The source buffer in the 32-bit address space.
-         * @param[in] sz The number of bytes to copy.
-         */
-        VOID NTAPI memcpy64(_In_ DWORD64 dest, _In_reads_bytes_(sz) VOID* src, _In_ SIZE_T sz);
+		/**
+		 * @brief Retrieves the 64-bit address of LdrGetProcedureAddress.
+		 * @return An NtResult containing the 64-bit function address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD64> NTAPI GetLdrGetProcedureAddress64();
 
-        /**
-         * @brief Retrieves the 32-bit base memory address of a loaded module.
-         * @param[in] moduleName The wide-character name of the module.
-         * @return The 32-bit base address of the module.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD NTAPI GetModuleBase32(_In_z_ const wchar_t* moduleName);
+		/**
+		 * @brief Copies memory from a 64-bit source address into a 32-bit destination buffer.
+		 * @param[out] Destination The destination buffer in the 32-bit address space.
+		 * @param[in] Source The 64-bit source address.
+		 * @param[in] Size The number of bytes to copy.
+		 */
+		VOID NTAPI memcpy64(_Out_writes_bytes_all_(Size) PVOID Destination, _In_ DWORD64 Source, _In_ SIZE_T Size);
 
-        /**
-         * @brief Gets the 32-bit address of the Thread Environment Block (TEB).
-         * @return The 32-bit TEB address.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD NTAPI GetTeb32();
+		/**
+		 * @brief Copies memory from a 32-bit source buffer into a 64-bit destination address.
+		 * @param[in] Destination The 64-bit destination address.
+		 * @param[in] Source The source buffer in the 32-bit address space.
+		 * @param[in] Size The number of bytes to copy.
+		 */
+		VOID NTAPI memcpy64(_In_ DWORD64 Destination, _In_reads_bytes_(Size) PVOID Source, _In_ SIZE_T Size);
 
-        /**
-         * @brief Gets the 32-bit address of the Process Environment Block (PEB).
-         * @return The 32-bit PEB address.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD NTAPI GetPeb32();
+		/**
+		 * @brief Retrieves the module entry from the 32-bit PEB loader list.
+		 * @param[in] ModuleName The wide-character module name.
+		 * @return An NtResult containing the 32-bit LDR_DATA_TABLE_ENTRY address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD> NTAPI GetModuleLdrEntry32(_In_z_ PCWSTR ModuleName);
 
-        /**
-         * @brief Retrieves the 32-bit base address of ntdll.dll.
-         * @return The 32-bit base address of ntdll.dll.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD NTAPI GetNtdll32();
+		/**
+		 * @brief Retrieves the 32-bit base address of a loaded module.
+		 * @param[in] ModuleName The wide-character module name.
+		 * @return An NtResult containing the 32-bit module base address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD> NTAPI GetModuleBase32(_In_z_ PCWSTR ModuleName);
 
-        /**
-         * @brief Retrieves the 32-bit base address of kernel32.dll.
-         * @return The 32-bit base address of kernel32.dll.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD NTAPI GetKernel32();
+		/**
+		 * @brief Gets the 32-bit Thread Environment Block (TEB) address.
+		 * @return The 32-bit TEB address.
+		 */
+		_Check_return_ _Success_(return != 0)
+			DWORD NTAPI GetTeb32();
 
-        /**
-         * @brief Retrieves the 32-bit address of the LdrGetProcedureAddress function.
-         * @return The 32-bit address of the function.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD NTAPI GetLdrGetProcedureAddress32();
+		/**
+		 * @brief Gets the 32-bit Process Environment Block (PEB) address.
+		 * @return The 32-bit PEB address.
+		 */
+		_Check_return_ _Success_(return != 0)
+			DWORD NTAPI GetPeb32();
 
-        /**
-         * @brief Manually loads a library into the 32-bit address space.
-         * @param[in] moduleName The wide-character name of the module to load.
-         * @return The 32-bit base address of the loaded module.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD NTAPI LoadLibrary32(_In_z_ const wchar_t* moduleName);
+		/**
+		 * @brief Retrieves the 32-bit base address of ntdll.dll.
+		 * @return An NtResult containing the 32-bit ntdll.dll base address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD> NTAPI GetNtdll32();
 
-        /**
-         * @brief Thread-safely checks if a 32-bit function's memory address is already cached.
-         * @param[in] funcName The name of the target function.
-         * @return The cached 32-bit address if found, otherwise 0.
-         */
-        _Success_(return != 0)
-            DWORD IsCached32(_In_ const std::string& funcName) {
-            std::shared_lock<std::shared_mutex> lock(_mutex32);
-            auto it = _cache32.find(funcName);
-            if ( it != _cache32.end() ) return it->second;
-            return 0;
-        }
+		/**
+		 * @brief Retrieves the 32-bit base address of kernel32.dll.
+		 * @return An NtResult containing the 32-bit kernel32.dll base address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD> NTAPI GetKernel32();
 
-        /**
-         * @brief Retrieves the 32-bit memory address of an exported function, using an internal cache to optimize repeated calls.
-         * @param[in] hMod The 32-bit base address of the module containing the function.
-         * @param[in] funcName The name of the exported function.
-         * @return The 32-bit address of the function.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD GetProcAddress32(_In_ DWORD hMod, _In_ const std::string& funcName) {
-            if ( auto addr = IsCached32(funcName) ) return addr;
-            if ( hMod == 0 ) return 0;
-            DWORD procAddr = GetProcAddress32Impl(hMod, funcName.c_str());
-            if ( procAddr ) {
-                std::unique_lock<std::shared_mutex> lock(_mutex32);
-                _cache32[ funcName ] = procAddr;
-            }
-            return procAddr;
-        }
+		/**
+		 * @brief Retrieves the 32-bit address of LdrGetProcedureAddress.
+		 * @return An NtResult containing the 32-bit function address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD> NTAPI GetLdrGetProcedureAddress32();
 
-        /**
-         * @brief Retrieves the 32-bit memory address of an exported function by providing the module name.
-         * @param[in] moduleName The wide-character name of the target module.
-         * @param[in] funcName The name of the exported function.
-         * @return The 32-bit address of the function.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD GetProcAddress32(_In_ const std::wstring& moduleName, _In_ const std::string& funcName) {
-            if ( auto addr = IsCached32(funcName) ) return addr;
-            DWORD hMod = GetModuleBase32(moduleName.c_str());
-            if ( hMod == 0 ) hMod = LoadLibrary32(moduleName.c_str());
-            if ( hMod == 0 ) return 0;
-            return GetProcAddress32(hMod, funcName);
-        }
+		/**
+		 * @brief Manually loads a library into the 32-bit address space.
+		 * @param[in] ModuleName The wide-character module name to load.
+		 * @return An NtResult containing the 32-bit loaded module base address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD> NTAPI LoadLibrary32(_In_z_ PCWSTR ModuleName);
 
-        /**
-         * @brief Retrieves the 32-bit memory address of an exported function, defaulting to searching within the 32-bit ntdll.dll.
-         * @param[in] funcName The name of the exported function.
-         * @return The 32-bit address of the function.
-         */
-        _Check_return_ _Success_(return != 0)
-            DWORD GetProcAddress32(_In_ const std::string& funcName) {
-            if ( auto addr = IsCached32(funcName) ) return addr;
-            return GetProcAddress32(GetNtdll32(), funcName);
-        }
+		/**
+		 * @brief Maps a 32-bit KnownDll section view.
+		 * @param[in] DllName The KnownDll name to map.
+		 * @param[out] MappedBase Receives the mapped 32-bit base address on success.
+		 * @param[out] ViewSize Optional pointer that receives the mapped view size.
+		 * @return NtStatus::Success on success; failure status otherwise.
+		 */
+		_Check_return_
+			NtStatus NTAPI MapKnownDllSection32(_In_z_ PCWSTR DllName, _Out_ DWORD* MappedBase, _Out_opt_ PSIZE_T ViewSize = nullptr);
 
-        protected:
-        /**
-         * @brief Internal implementation to resolve exported 64-bit function addresses via Heaven's Gate.
-         * @param[in] hMod The 64-bit module base address.
-         * @param[in] funcName The function name.
-         * @return The 64-bit function address.
-         */
-        DWORD64 NTAPI GetProcAddress64Impl(_In_ DWORD64 hMod, _In_z_ const char* funcName) override;
+		/**
+		 * @brief Unmaps a 32-bit KnownDll section view.
+		 * @param[in] MappedBase The mapped 32-bit base address.
+		 * @return NtStatus::Success on success; failure status otherwise.
+		 */
+		_Check_return_
+			NtStatus NTAPI UnmapKnownDllSection32(_In_opt_ DWORD MappedBase);
 
-        /**
-         * @brief Internal implementation to resolve exported 32-bit function addresses.
-         * @param[in] hMod The 32-bit module base address.
-         * @param[in] funcName The function name.
-         * @return The 32-bit function address.
-         */
-        DWORD NTAPI GetProcAddress32Impl(_In_ DWORD hMod, _In_z_ const char* funcName);
+		/**
+		 * @brief Thread-safely checks whether a 32-bit exported function address is cached.
+		 * @param[in] FunctionName The exported function name.
+		 * @param[out] Address Receives the cached 32-bit address when the function returns TRUE.
+		 * @return TRUE when a cached address was found; otherwise FALSE.
+		 */
+		_Check_return_ _Success_(return != FALSE)
+			BOOL IsCached32(_In_ const std::string& FunctionName, _Out_ DWORD* Address) {
+			if ( !Address ) {
+				return FALSE;
+			}
+			*Address = 0;
+			std::shared_lock<std::shared_mutex> lock(_mutex32);
+			auto it = _cache32.find(FunctionName);
+			if ( it == _cache32.end() || !it->second ) {
+				return FALSE;
+			}
+			*Address = it->second;
+			return TRUE;
+		}
 
-        private:
-        Wow64Resolver() = default;
+		/**
+		 * @brief Retrieves the 32-bit address of an exported function and caches successful lookups.
+		 * @param[in] ModuleBase The 32-bit module base address.
+		 * @param[in] FunctionName The exported function name.
+		 * @return An NtResult containing the 32-bit function address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD> GetProcAddress32(_In_ DWORD ModuleBase, _In_ const std::string& FunctionName) {
+			DWORD cachedAddr = 0;
+			if ( IsCached32(FunctionName, &cachedAddr) ) {
+				return NtResult<DWORD>::Success(cachedAddr);
+			}
+			if ( !ModuleBase ) {
+				return NtResult<DWORD>::Failure(STATUS_INVALID_PARAMETER, L"Invalid module base.");
+			}
 
-        std::unordered_map<std::string, DWORD> _cache32;
-        std::shared_mutex _mutex32;
-    };
-    #endif
+			auto procAddr = GetProcAddress32Impl(ModuleBase, FunctionName.c_str());
+			if ( procAddr ) {
+				std::unique_lock<std::shared_mutex> lock(_mutex32);
+				_cache32[ FunctionName ] = procAddr.Value();
+			}
+			return procAddr;
+		}
+
+		/**
+		 * @brief Retrieves the 32-bit address of an exported function by module name.
+		 * @param[in] ModuleName The wide-character module name.
+		 * @param[in] FunctionName The exported function name.
+		 * @return An NtResult containing the 32-bit function address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD> GetProcAddress32(_In_ const std::wstring& ModuleName, _In_ const std::string& FunctionName) {
+			DWORD cachedAddr = 0;
+			if ( IsCached32(FunctionName, &cachedAddr) ) {
+				return NtResult<DWORD>::Success(cachedAddr);
+			}
+
+			auto moduleBase = GetModuleBase32(ModuleName.c_str());
+			if ( !moduleBase && moduleBase.Code() == STATUS_DLL_NOT_FOUND ) {
+				moduleBase = LoadLibrary32(ModuleName.c_str());
+			}
+			if ( !moduleBase ) {
+				return NtResult<DWORD>::Failure(moduleBase);
+			}
+			return GetProcAddress32(moduleBase.Value(), FunctionName);
+		}
+
+		/**
+		 * @brief Retrieves the 32-bit address of an exported function from the 32-bit ntdll.dll.
+		 * @param[in] FunctionName The exported function name expected in ntdll.dll.
+		 * @return An NtResult containing the 32-bit function address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD> GetProcAddress32(_In_ const std::string& FunctionName) {
+			auto ntdll32 = GetNtdll32();
+			if ( !ntdll32 ) {
+				return NtResult<DWORD>::Failure(ntdll32);
+			}
+			return GetProcAddress32(ntdll32.Value(), FunctionName);
+		}
+
+		protected:
+		/**
+		 * @brief Internal implementation used by the cached 64-bit GetProcAddress64 wrappers.
+		 * @param[in] ModuleBase The 64-bit module base address.
+		 * @param[in] FunctionName The exported function name.
+		 * @return An NtResult containing the 64-bit function address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD64> NTAPI GetProcAddress64Impl(_In_ DWORD64 ModuleBase, _In_z_ PCSTR FunctionName) override;
+
+		/**
+		 * @brief Internal implementation used by the cached 32-bit GetProcAddress32 wrappers.
+		 * @param[in] ModuleBase The 32-bit module base address.
+		 * @param[in] FunctionName The exported function name.
+		 * @return An NtResult containing the 32-bit function address on success.
+		 */
+		_Check_return_
+			NtResult<DWORD> NTAPI GetProcAddress32Impl(_In_ DWORD ModuleBase, _In_z_ PCSTR FunctionName);
+
+		private:
+		Wow64Resolver() = default;
+
+		std::unordered_map<std::string, DWORD> _cache32;
+		std::shared_mutex _mutex32;
+	};
+	#endif
 }

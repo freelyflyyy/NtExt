@@ -3,7 +3,7 @@
  * @brief Main inclusion header for the NtExt library.
  * @details This file serves as the primary entry point.
  * It handles automatic architecture detection (x86 vs x64) and includes all essential
- * components: precompiled headers, address resolvers, and dynamic code invokers.
+ * components: address resolvers and dynamic code invokers.
  * By including this single file, users gain immediate access to advanced Windows
  * internal features, including Heaven's Gate, dynamic Syscall execution, and
  * manual PEB/TEB parsing without relying on highly monitored Windows APIs.
@@ -12,7 +12,8 @@
 
 
 #pragma once
-#include "pch/stdafx.h"
+#include "internal/NtStatus.hpp"
+#include "internal/NtResult.hpp"
 #include "resolver/NtExtResolvers.hpp"
 #include "invoker/NtExtInvokers.hpp"
 

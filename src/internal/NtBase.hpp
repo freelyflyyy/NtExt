@@ -20,14 +20,3 @@
 
 // Windows version helper
 #include <sdkddkver.h>
-
-#include <unordered_map>
-#include <shared_mutex>
-#include <mutex>
-#include <vector>
-#include <string>
-#include <map>
-#include <memory>
-#include <algorithm>
-#include <functional>
-#include <cstdarg>

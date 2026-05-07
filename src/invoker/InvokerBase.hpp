@@ -1,5 +1,10 @@
 #pragma once
-#include "../pch/stdafx.h"
+#include "../internal/NtBase.hpp"
+#include "../internal/NtResult.hpp"
+#include "../internal/ScopeAction.hpp"
+
+#include <cstring>
+#include <string>
 
 namespace NtExt {
 
@@ -36,38 +41,53 @@ namespace NtExt {
 
 		std::string _shellcode;
 
-		virtual VOID onBackupEnv(_Inout_ std::string* pShell) = 0;
-		virtual VOID onRestoreEnv(_Inout_ std::string* pShell) = 0;
+		virtual VOID onBackupEnv(_Inout_ std::string* Shell) = 0;
+		virtual VOID onRestoreEnv(_Inout_ std::string* Shell) = 0;
 		virtual VOID onPrepareEnv(_Inout_ std::string* pShell) {}
 		virtual VOID onEmitOpcode(_Inout_ std::string* pShell) {}
 
-		_Check_return_ _Success_(return != FALSE)
-			virtual BOOL CompileRoutine(_Inout_ std::string* pShell) {
-			if ( !pShell ) return FALSE;
+		_Check_return_
+			virtual NtStatus CompileRoutine(_Inout_ std::string* pShell) {
+			if ( !pShell ) {
+				return NtStatus::Failure(STATUS_INVALID_PARAMETER, L"Invalid shell buffer.");
+			}
 			pShell->clear();
 			onBackupEnv(pShell);
 			onPrepareEnv(pShell);
 			onEmitOpcode(pShell);
 			onRestoreEnv(pShell);
-			return !pShell->empty();
+			if ( pShell->empty() ) {
+				return NtStatus::Failure(STATUS_UNSUCCESSFUL, L"Failed to compile shell routine.");
+			}
+			return NtStatus::Success();
 		}
 
 		public:
-		_Check_return_ _Success_(return != 0)
-			DWORD64 Invoke() {
-			if ( !CompileRoutine(&_shellcode) ) return 0;
+		_Check_return_
+			NtResult<DWORD64> Invoke() {
+			auto status = CompileRoutine(&_shellcode);
+			if ( !status ) {
+				return NtResult<DWORD64>::Failure(status);
+			}
 
 			LPVOID pExecuteMemory = VirtualAlloc(NULL, _shellcode.size(), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-			if ( !pExecuteMemory ) return 0;
+			if ( !pExecuteMemory ) {
+				return NtResult<DWORD64>::Failure(STATUS_NO_MEMORY, L"VirtualAlloc failed.");
+			}
+
+			NTEXT_DEFER {
+				VirtualFree(pExecuteMemory, 0, MEM_RELEASE);
+			};
 
 			memcpy(pExecuteMemory, _shellcode.data(), _shellcode.size());
 			DWORD oldProtect;
-			VirtualProtect(pExecuteMemory, _shellcode.size(), PAGE_EXECUTE_READ, &oldProtect);
+			if ( !VirtualProtect(pExecuteMemory, _shellcode.size(), PAGE_EXECUTE_READ, &oldProtect) ) {
+				return NtResult<DWORD64>::Failure(STATUS_ACCESS_DENIED, L"VirtualProtect failed.");
+			}
 
 			auto FnExecuteCode = (DWORD64(*)()) pExecuteMemory;
 			const DWORD64 result = FnExecuteCode();
-			VirtualFree(pExecuteMemory, 0, MEM_RELEASE);
-			return result;
+			return NtResult<DWORD64>::Success(result);
 		}
 	};
 }

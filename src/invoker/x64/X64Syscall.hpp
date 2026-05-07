@@ -25,7 +25,7 @@ namespace NtExt {
          */
         template<typename... Args>
         _Check_return_
-            DWORD64 operator()(Args... args) {
+            NtStatus operator()(Args... args) {
             static_assert(sizeof...(args) <= 16, "X64Syscall supports up to 16 arguments.");
             memset(_args, 0, sizeof(_args));
             _argCount = sizeof...(args);
@@ -33,17 +33,31 @@ namespace NtExt {
                 DWORD i = 0;
                 ((_args[ i++ ] = (DWORD64) args), ...);
             }
-            return Invoke();
+            auto invoke = Invoke();
+            if ( !invoke ) {
+                return NtStatus::Failure(invoke);
+            }
+            return NtStatus((NTSTATUS) invoke.Value());
         }
 
         protected:
         VOID onPrepareEnv(_Inout_ std::string* pShell) override {
-            if ( !pShell ) return;
+            if ( !pShell ) {
+                return;
+            }
 
-            if ( _argCount > 0 ) AppendMovImm64(pShell, 0x48, 0xB9, _args[ 0 ]);
-            if ( _argCount > 1 ) AppendMovImm64(pShell, 0x48, 0xBA, _args[ 1 ]);
-            if ( _argCount > 2 ) AppendMovImm64(pShell, 0x49, 0xB8, _args[ 2 ]);
-            if ( _argCount > 3 ) AppendMovImm64(pShell, 0x49, 0xB9, _args[ 3 ]);
+            if ( _argCount > 0 ) {
+                AppendMovImm64(pShell, 0x48, 0xB9, _args[ 0 ]);
+            }
+            if ( _argCount > 1 ) {
+                AppendMovImm64(pShell, 0x48, 0xBA, _args[ 1 ]);
+            }
+            if ( _argCount > 2 ) {
+                AppendMovImm64(pShell, 0x49, 0xB8, _args[ 2 ]);
+            }
+            if ( _argCount > 3 ) {
+                AppendMovImm64(pShell, 0x49, 0xB9, _args[ 3 ]);
+            }
 
             DWORD64 stackArgCount = (_argCount > 4) ? (_argCount - 4) : 0;
             if ( stackArgCount & 1 ) {
@@ -62,7 +76,9 @@ namespace NtExt {
         }
 
         VOID onEmitOpcode(_Inout_ std::string* pShell) override {
-            if ( !pShell ) return;
+            if ( !pShell ) {
+                return;
+            }
             BYTE syscall_stub[] = {
                 0x49, 0x89, 0xCA,
                 0xB8, 0x00, 0x00, 0x00, 0x00,
