@@ -1,6 +1,8 @@
 #pragma once
 #include "Wow64Invoker.hpp"
 
+#include <utility>
+
 namespace NtExt {
 
     #ifdef _M_IX86
@@ -21,14 +23,16 @@ namespace NtExt {
          * @brief Triggers the execution of the 64-bit opcodes.
          * @return The 64-bit return value (from the 64-bit RAX register).
          */
-        _Check_return_
-            DWORD64 operator()() {
+		_Check_return_
+            NtResult<DWORD64> operator()() {
             return Invoke();
         }
 
         protected:
         VOID onEmitOpcode(_Inout_ std::string* pShell) override {
-            if ( !pShell ) return;
+            if ( !pShell ) {
+                return;
+            }
             pShell->append(_opcode);
         }
     };

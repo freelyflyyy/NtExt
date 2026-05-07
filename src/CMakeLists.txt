@@ -9,6 +9,9 @@ set(NTEXT_PCH_HEADERS
 set(NTEXT_INTERNAL_HEADERS
     "internal/NtStructs.h"
     "internal/ScopeAction.hpp"
+    "internal/NtBase.hpp"
+    "internal/NtStatus.hpp"
+    "internal/NtResult.hpp"
 )
 
 set(NTEXT_INVOKER_BASE_HEADERS
