@@ -44,6 +44,23 @@ int main() {
         (DWORD64) 0
         );
     std::cout << "NTDLL DOS Magic: 0x" << std::hex << dosMagic << std::endl;
+
+
+	auto mapNtdll64 = Resolver.MapNtdll64();
+    auto read = Resolver.GetSyscallNumber64(mapNtdll64.Value(), "NtReadVirtualMemory");
+	std::cout << "Mapped NTDLL Base: 0x" << std::hex << mapNtdll64.Value() << std::endl;
+	std::cout << "Mapped NTDLL NtReadVirtualMemory Syscall: 0x" << std::hex << read.Value() << std::endl;
+
+    Syscall(read.Value())(
+        (DWORD64) -1,
+        mapNtdll64.Value(),
+        (DWORD64) &dosMagic,
+        (DWORD64) sizeof(dosMagic),
+        (DWORD64) 0
+		);
+
+	std::cout << "Mapped NTDLL DOS Magic: 0x" << std::hex << dosMagic << std::endl;
+	Resolver.UnmapKnownDllSection64(mapNtdll64.Value());
     system("pause");
     return 0;
 }

@@ -69,6 +69,12 @@ namespace NtExt {
 		_Check_return_
 			virtual NtResult<DWORD64> NTAPI GetKernel64() = 0;
 
+		_Check_return_
+			virtual NtResult<DWORD64> NTAPI MapNtdll64(_Out_opt_ DWORD64* ViewSize = nullptr) = 0;
+
+		_Check_return_
+			virtual NtResult<DWORD64> NTAPI MapKernel64(_Out_opt_ DWORD64* ViewSize = nullptr) = 0;
+
 		/**
 		 * @brief Manually loads a library into the 64-bit address space using LdrLoadDll.
 		 * @param[in] ModuleName The wide-character module name to load.
