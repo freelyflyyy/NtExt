@@ -40,6 +40,7 @@ NtExt无缝支持WoW64（32位）和Native x64（64位）环境。
 |:-----------------------------|:--------------------|:-------------------------------------------------------------|
 | `GetTeb64` / `GetPeb64`      | `DWORD64`           | 获取 64 位 TEB/PEB 地址                                      |
 | `GetNtdll64` / `GetKernel64` | `NtResult<DWORD64>` | 获取 64 位 ntdll/kernel32 模块基址                           |
+| `MapNtdll64` / `MapKernel64` | `NtResult<DWORD64>` | 映射 64 位 KnownDll ntdll/kernel32 视图                      |
 | `GetModuleLdrEntry64`        | `NtResult<DWORD64>` | 获取 64 位模块的 `LDR_DATA_TABLE_ENTRY` 地址                 |
 | `GetModuleBase64`            | `NtResult<DWORD64>` | 获取 64 位模块基址                                           |
 | `GetProcAddress64`           | `NtResult<DWORD64>` | 解析并缓存 64 位导出函数地址                                 |
@@ -54,6 +55,7 @@ NtExt无缝支持WoW64（32位）和Native x64（64位）环境。
 |:------------------------------|:------------------|:-----------------------------------------------|
 | `GetTeb32` / `GetPeb32`       | `DWORD`           | 获取 32 位 TEB/PEB 地址                        |
 | `GetNtdll32` / `GetKernel32`  | `NtResult<DWORD>` | 获取 32 位 ntdll/kernel32 模块基址             |
+| `MapNtdll32` / `MapKernel32`  | `NtResult<DWORD>` | 映射 32 位 KnownDll ntdll/kernel32 视图        |
 | `GetModuleLdrEntry32`         | `NtResult<DWORD>` | 获取 32 位模块的 `LDR_DATA_TABLE_ENTRY` 地址   |
 | `GetModuleBase32`             | `NtResult<DWORD>` | 获取 32 位模块基址                             |
 | `GetProcAddress32`            | `NtResult<DWORD>` | 解析并缓存 32 位导出函数地址                   |

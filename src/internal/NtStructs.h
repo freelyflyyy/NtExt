@@ -51,6 +51,26 @@ namespace NtExt {
 
 	template <class T>
 	// NOLINTNEXTLINE
+	struct alignas(sizeof(T)) _LARGE_INTEGER_T {
+		DWORD LowPart;
+		LONG HighPart;
+	};
+
+	typedef _LARGE_INTEGER_T<DWORD> LARGE_INTEGER32;
+	typedef _LARGE_INTEGER_T<DWORD64> LARGE_INTEGER64;
+
+	template <class T>
+	// NOLINTNEXTLINE
+	struct alignas(sizeof(T)) _ULARGE_INTEGER_T {
+		DWORD LowPart;
+		DWORD HighPart;
+	};
+
+	typedef _ULARGE_INTEGER_T<DWORD> ULARGE_INTEGER32;
+	typedef _ULARGE_INTEGER_T<DWORD64> ULARGE_INTEGER64;
+
+	template <class T>
+	// NOLINTNEXTLINE
 	struct alignas(sizeof(T)) _LIST_ENTRY_T {
 		T Flink;
 		T Blink;
@@ -205,7 +225,7 @@ namespace NtExt {
 		_LIST_ENTRY_T<T> StaticLinks;
 		T ContextInformation;
 		T OriginalBase;
-		_LARGE_INTEGER LoadTime;
+		_LARGE_INTEGER_T<T> LoadTime;
 	};
 
 	typedef _LDR_DATA_TABLE_ENTRY_T<DWORD> LDR_DATA_TABLE_ENTRY32;
@@ -272,7 +292,7 @@ namespace NtExt {
 			NGF dummy02;
 		};
 
-		LARGE_INTEGER CriticalSectionTimeout;
+		_LARGE_INTEGER_T<T> CriticalSectionTimeout;
 		T HeapSegmentReserve;
 		T HeapSegmentCommit;
 		T HeapDeCommitTotalFreeThreshold;
@@ -298,8 +318,8 @@ namespace NtExt {
 		T TlsExpansionBitmap;
 		DWORD TlsExpansionBitmapBits[ 32 ];
 		T SessionId;
-		ULARGE_INTEGER AppCompatFlags;
-		ULARGE_INTEGER AppCompatFlagsUser;
+		_ULARGE_INTEGER_T<T> AppCompatFlags;
+		_ULARGE_INTEGER_T<T> AppCompatFlagsUser;
 		T pShimData;
 		T AppCompatInfo;
 		_STRING_T<T> CSDVersion;
@@ -320,7 +340,7 @@ namespace NtExt {
 		T TracingFlags;
 	};
 
-	typedef _PEB_T<DWORD, DWORD64, 34> PEB32;
+	typedef _PEB_T<DWORD, ULARGE_INTEGER32, 34> PEB32;
 	typedef _PEB_T<DWORD64, DWORD, 30> PEB64;
 
 	template <class T>
@@ -385,6 +405,26 @@ namespace NtExt {
 	typedef _RTL_USER_PROCESS_PARAMETERS_T<ULONG> RTL_USER_PROCESS_PARAMETERS32;
 	typedef _RTL_USER_PROCESS_PARAMETERS_T<ULONGLONG> RTL_USER_PROCESS_PARAMETERS64;
 
+	#define InitializeUserProcessParametersConsoleEx32(p, c, f, i, o, e, w) \
+		do {                                                                \
+			(p)->ConsoleHandle = (DWORD) (c);                               \
+			(p)->ConsoleFlags = (f);                                        \
+			(p)->StandardInput = (DWORD) (i);                               \
+			(p)->StandardOutput = (DWORD) (o);                              \
+			(p)->StandardError = (DWORD) (e);                               \
+			(p)->WindowFlags = (w);                                         \
+		} while (0)
+
+	#define InitializeUserProcessParametersConsoleEx64(p, c, f, i, o, e, w) \
+		do {                                                                \
+			(p)->ConsoleHandle = (DWORD64) (c);                             \
+			(p)->ConsoleFlags = (f);                                        \
+			(p)->StandardInput = (DWORD64) (i);                             \
+			(p)->StandardOutput = (DWORD64) (o);                            \
+			(p)->StandardError = (DWORD64) (e);                             \
+			(p)->WindowFlags = (w);                                         \
+		} while (0)
+
 	template <class T>
 	// NOLINTNEXTLINE
 	struct alignas(sizeof(T)) _MEMORY_BASIC_INFORMATION_T {
@@ -419,13 +459,13 @@ namespace NtExt {
 	struct alignas(sizeof(T)) _SYSTEM_PROCESS_INFORMATION_T {
 		ULONG NextEntryOffset;
 		ULONG NumberOfThreads;
-		LARGE_INTEGER WorkingSetPrivateSize;
+		_LARGE_INTEGER_T<T> WorkingSetPrivateSize;
 		ULONG HardFaultCount;
 		ULONG NumberOfThreadsHighWatermark;
 		ULONGLONG CycleTime;
-		LARGE_INTEGER CreateTime;
-		LARGE_INTEGER UserTime;
-		LARGE_INTEGER KernelTime;
+		_LARGE_INTEGER_T<T> CreateTime;
+		_LARGE_INTEGER_T<T> UserTime;
+		_LARGE_INTEGER_T<T> KernelTime;
 		_STRING_T<T> ImageName;
 		KPRIORITY BasePriority;
 		T UniqueProcessId;
@@ -445,12 +485,12 @@ namespace NtExt {
 		T PagefileUsage;
 		T PeakPagefileUsage;
 		T PrivatePageCount;
-		LARGE_INTEGER ReadOperationCount;
-		LARGE_INTEGER WriteOperationCount;
-		LARGE_INTEGER OtherOperationCount;
-		LARGE_INTEGER ReadTransferCount;
-		LARGE_INTEGER WriteTransferCount;
-		LARGE_INTEGER OtherTransferCount;
+		_LARGE_INTEGER_T<T> ReadOperationCount;
+		_LARGE_INTEGER_T<T> WriteOperationCount;
+		_LARGE_INTEGER_T<T> OtherOperationCount;
+		_LARGE_INTEGER_T<T> ReadTransferCount;
+		_LARGE_INTEGER_T<T> WriteTransferCount;
+		_LARGE_INTEGER_T<T> OtherTransferCount;
 	};
 
 	typedef _SYSTEM_PROCESS_INFORMATION_T<DWORD> SYSTEM_PROCESS_INFORMATION32;

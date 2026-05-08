@@ -63,12 +63,18 @@ namespace NtExt {
 		_Check_return_
 			NtResult<DWORD64> NTAPI GetNtdll64() override;
 
+		_Check_return_
+			NtResult<DWORD64> NTAPI MapNtdll64(_Out_opt_ DWORD64* ViewSize = nullptr) override;
+
 		/**
 		 * @brief Retrieves the 64-bit base address of kernel32.dll.
 		 * @return An NtResult containing the 64-bit kernel32.dll base address on success.
 		 */
 		_Check_return_
 			NtResult<DWORD64> NTAPI GetKernel64() override;
+
+		_Check_return_
+			NtResult<DWORD64> NTAPI MapKernel64(_Out_opt_ DWORD64* ViewSize = nullptr) override;
 
 		/**
 		 * @brief Manually loads a library into the 64-bit address space of the Wow64 process.
@@ -156,12 +162,18 @@ namespace NtExt {
 		_Check_return_
 			NtResult<DWORD> NTAPI GetNtdll32();
 
+		_Check_return_
+			NtResult<DWORD> NTAPI MapNtdll32(_Out_opt_ PSIZE_T ViewSize = nullptr);
+
 		/**
 		 * @brief Retrieves the 32-bit base address of kernel32.dll.
 		 * @return An NtResult containing the 32-bit kernel32.dll base address on success.
 		 */
 		_Check_return_
 			NtResult<DWORD> NTAPI GetKernel32();
+
+		_Check_return_
+			NtResult<DWORD> NTAPI MapKernel32(_Out_opt_ PSIZE_T ViewSize = nullptr);
 
 		/**
 		 * @brief Retrieves the 32-bit address of LdrGetProcedureAddress.

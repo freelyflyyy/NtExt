@@ -24,7 +24,7 @@ namespace NtExt {
 		 * @return The 64-bit return value from the executed function.
 		 */
 		template<typename... Args>
-		_Check_return_ 
+		_Check_return_
 			NtResult<DWORD64> operator()(Args... args) {
 			static_assert(sizeof...(args) <= 16, "X64Call supports up to 16 arguments.");
 			memset(_args, 0, sizeof(_args));

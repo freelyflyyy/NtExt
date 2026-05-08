@@ -53,6 +53,7 @@ namespace NtExt {
 		if ( !funcAddr64 ) {
 			return NtResult<DWORD64>::Failure(funcAddr64);
 		}
+
 		auto _getSysPacked = [this] (DWORD64 funcAddr) -> DWORD64 {
 			BYTE opcodes[ 8 ] = { 0 };
 			memcpy64(&opcodes, funcAddr, sizeof(DWORD64));
@@ -223,6 +224,16 @@ namespace NtExt {
 	}
 
 	_Check_return_
+		NtResult<DWORD64> NTAPI Wow64Resolver::MapNtdll64(_Out_opt_ DWORD64* ViewSize) {
+		DWORD64 mappedBase = 0;
+		auto status = MapKnownDllSection64(L"ntdll.dll", &mappedBase, ViewSize);
+		if ( !status ) {
+			return NtResult<DWORD64>::Failure(status);
+		}
+		return NtResult<DWORD64>::Success(mappedBase);
+	}
+
+	_Check_return_
 		NtResult<DWORD64> NTAPI Wow64Resolver::GetKernel64() {
 		static DWORD64 _kernel64 = 0;
 		if ( _kernel64 != 0 ) {
@@ -259,12 +270,7 @@ namespace NtExt {
 			VirtualProtect(&subSystem, sizeof(WORD), PAGE_READWRITE, &oldProctect) ) {
 
 			RTL_USER_PROCESS_PARAMETERS64 fakeUpp = _upp64;
-			fakeUpp.ConsoleHandle = 0;
-			fakeUpp.ConsoleFlags = 0;
-			fakeUpp.StandardInput = 0;
-			fakeUpp.StandardOutput = 0;
-			fakeUpp.StandardError = 0;
-			fakeUpp.WindowFlags = 0;
+			InitializeUserProcessParametersConsoleEx64(&fakeUpp, 0, 0, 0, 0, 0, 0);
 
 			memcpy64(_peb64.ProcessParameters, &fakeUpp, sizeof(RTL_USER_PROCESS_PARAMETERS64));
 			subSystem = IMAGE_SUBSYSTEM_WINDOWS_GUI;
@@ -294,6 +300,16 @@ namespace NtExt {
 			return NtResult<DWORD64>::Failure(STATUS_DLL_NOT_FOUND, L"kernel32.dll was not loaded.");
 		}
 		return NtResult<DWORD64>::Success(_kernel64);
+	}
+
+	_Check_return_
+		NtResult<DWORD64> NTAPI Wow64Resolver::MapKernel64(_Out_opt_ DWORD64* ViewSize) {
+		DWORD64 mappedBase = 0;
+		auto status = MapKnownDllSection64(L"kernel32.dll", &mappedBase, ViewSize);
+		if ( !status ) {
+			return NtResult<DWORD64>::Failure(status);
+		}
+		return NtResult<DWORD64>::Success(mappedBase);
 	}
 
 	_Check_return_
@@ -550,6 +566,16 @@ namespace NtExt {
 	}
 
 	_Check_return_
+		NtResult<DWORD> NTAPI Wow64Resolver::MapNtdll32(_Out_opt_ PSIZE_T ViewSize) {
+		DWORD mappedBase = 0;
+		auto status = MapKnownDllSection32(L"ntdll.dll", &mappedBase, ViewSize);
+		if ( !status ) {
+			return NtResult<DWORD>::Failure(status);
+		}
+		return NtResult<DWORD>::Success(mappedBase);
+	}
+
+	_Check_return_
 		NtResult<DWORD> NTAPI Wow64Resolver::GetKernel32() {
 		static DWORD _kernel32 = 0;
 		if ( _kernel32 != 0 ) {
@@ -561,6 +587,16 @@ namespace NtExt {
 		}
 		_kernel32 = moduleBase.Value();
 		return NtResult<DWORD>::Success(_kernel32);
+	}
+
+	_Check_return_
+		NtResult<DWORD> NTAPI Wow64Resolver::MapKernel32(_Out_opt_ PSIZE_T ViewSize) {
+		DWORD mappedBase = 0;
+		auto status = MapKnownDllSection32(L"kernel32.dll", &mappedBase, ViewSize);
+		if ( !status ) {
+			return NtResult<DWORD>::Failure(status);
+		}
+		return NtResult<DWORD>::Success(mappedBase);
 	}
 
 	_Check_return_

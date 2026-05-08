@@ -132,6 +132,16 @@ namespace NtExt {
 	}
 
 	_Check_return_
+		NtResult<DWORD64> NTAPI X64Resolver::MapNtdll64(_Out_opt_ DWORD64* ViewSize) {
+		DWORD64 mappedBase = 0;
+		auto status = MapKnownDllSection64(L"ntdll.dll", &mappedBase, ViewSize);
+		if ( !status ) {
+			return NtResult<DWORD64>::Failure(status);
+		}
+		return NtResult<DWORD64>::Success(mappedBase);
+	}
+
+	_Check_return_
 		NtResult<DWORD64> NTAPI X64Resolver::GetKernel64() {
 		static DWORD64 _kernel64 = 0;
 		if ( _kernel64 != 0 ) {
@@ -143,6 +153,16 @@ namespace NtExt {
 		}
 		_kernel64 = moduleBase.Value();
 		return NtResult<DWORD64>::Success(_kernel64);
+	}
+
+	_Check_return_
+		NtResult<DWORD64> NTAPI X64Resolver::MapKernel64(_Out_opt_ DWORD64* ViewSize) {
+		DWORD64 mappedBase = 0;
+		auto status = MapKnownDllSection64(L"kernel32.dll", &mappedBase, ViewSize);
+		if ( !status ) {
+			return NtResult<DWORD64>::Failure(status);
+		}
+		return NtResult<DWORD64>::Success(mappedBase);
 	}
 
 	_Check_return_

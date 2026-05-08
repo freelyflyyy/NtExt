@@ -41,6 +41,7 @@ NtExt seamlessly supports both WoW64 (32-bit) and Native x64 (64-bit) environmen
 |:-----------------------------|:--------------------|:----------------------------------------------------------------------------|
 | `GetTeb64` / `GetPeb64`      | `DWORD64`           | Get the 64-bit TEB/PEB address                                              |
 | `GetNtdll64` / `GetKernel64` | `NtResult<DWORD64>` | Get the 64-bit ntdll/kernel32 module base                                   |
+| `MapNtdll64` / `MapKernel64` | `NtResult<DWORD64>` | Map a 64-bit KnownDll ntdll/kernel32 view                                   |
 | `GetModuleLdrEntry64`        | `NtResult<DWORD64>` | Get the 64-bit `LDR_DATA_TABLE_ENTRY` address for a loaded module           |
 | `GetModuleBase64`            | `NtResult<DWORD64>` | Get the 64-bit base address of a loaded module                              |
 | `GetProcAddress64`           | `NtResult<DWORD64>` | Resolve and cache a 64-bit exported function address                        |
@@ -55,6 +56,7 @@ NtExt seamlessly supports both WoW64 (32-bit) and Native x64 (64-bit) environmen
 |:------------------------------|:------------------|:------------------------------------------------------------------|
 | `GetTeb32` / `GetPeb32`       | `DWORD`           | Get the 32-bit TEB/PEB address                                    |
 | `GetNtdll32` / `GetKernel32`  | `NtResult<DWORD>` | Get the 32-bit ntdll/kernel32 module base                         |
+| `MapNtdll32` / `MapKernel32`  | `NtResult<DWORD>` | Map a 32-bit KnownDll ntdll/kernel32 view                         |
 | `GetModuleLdrEntry32`         | `NtResult<DWORD>` | Get the 32-bit `LDR_DATA_TABLE_ENTRY` address for a loaded module |
 | `GetModuleBase32`             | `NtResult<DWORD>` | Get the 32-bit base address of a loaded module                    |
 | `GetProcAddress32`            | `NtResult<DWORD>` | Resolve and cache a 32-bit exported function address              |

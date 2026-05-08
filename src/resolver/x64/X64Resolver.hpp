@@ -62,12 +62,18 @@ namespace NtExt {
 		_Check_return_
 			NtResult<DWORD64> NTAPI GetNtdll64() override;
 
+		_Check_return_
+			NtResult<DWORD64> NTAPI MapNtdll64(_Out_opt_ DWORD64* ViewSize = nullptr) override;
+
 		/**
 		 * @brief Retrieves the native 64-bit base address of kernel32.dll.
 		 * @return An NtResult containing the 64-bit kernel32.dll base address on success.
 		 */
 		_Check_return_
 			NtResult<DWORD64> NTAPI GetKernel64() override;
+
+		_Check_return_
+			NtResult<DWORD64> NTAPI MapKernel64(_Out_opt_ DWORD64* ViewSize = nullptr) override;
 
 		/**
 		 * @brief Manually loads a library into the native 64-bit address space.
